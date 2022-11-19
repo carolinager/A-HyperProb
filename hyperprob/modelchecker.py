@@ -26,6 +26,7 @@ class ModelChecker:
         self.no_of_subformula = 0
         self.no_of_state_quantifier = 0
         self.no_of_stutter_quantifier = 0
+        self.state_stutter_mapping = dict()
 
     def modelCheck(self):
         non_quantified_property, self.no_of_state_quantifier = propertyparser.findNumberOfStateQuantifier(
@@ -37,10 +38,13 @@ class ModelChecker:
         self.encodeStuttering()
         combined_list_of_states = list(
             itertools.product(self.model.getListOfStates(), repeat=self.no_of_state_quantifier))
+        combined_list_of_states_with_initial_stutter = list(itertools.product(self.model.getListOfStates(), [0]))
+        extended_states_with_stuttering = list(itertools.product(self.model.getListOfStates(), list(range(self.stutterLength))))
+        combined_list_of_states_with_stutter = list(itertools.product(extended_states_with_stuttering, repeat=self.no_of_stutter_quantifier))
 
         if self.initial_hyperproperty.parsed_property.data == 'exist_scheduler':
             self.addToSubformulaList(non_quantified_property)
-            self.encodeStateAndStutterQuantifiers(combined_list_of_states)
+            self.encodeStateAndStutterQuantifiers(combined_list_of_states_with_stutter)
             common.colourinfo("Encoded quantifiers", False)
             semanticEncoder = SemanticsEncoder(self.model, self.solver,
                                                self.list_of_subformula, self.list_of_bools, self.listOfBools,
@@ -54,7 +58,7 @@ class ModelChecker:
         elif self.initial_hyperproperty.parsed_property.data == 'forall_scheduler':
             negated_non_quantified_property = propertyparser.negateForallProperty(self.initial_hyperproperty.parsed_property)
             self.addToSubformulaList(negated_non_quantified_property)
-            self.encodeStateQuantifiers(combined_list_of_states)
+            self.encodeStateAndStutterQuantifiers(combined_list_of_states)
             common.colourinfo("Encoded quantifiers", False)
             semanticEncoder = SemanticsEncoder(self.model, self.solver,
                                                self.list_of_subformula, self.list_of_bools, self.listOfBools,
@@ -148,25 +152,44 @@ class ModelChecker:
             right_child = formula_phi.children[3]
             self.addToSubformulaList(right_child)
 
-    def encodeStateAndStutterQuantifiers(self, combined_list_of_states):
-        list_of_AV = []  # will have the OR, AND according to the quantifier in that index in the formula
+    def encodeStateAndStutterQuantifiers(self, combined_list_of_states_and_stutter):
+        list_of_state_AV = []  # will have the OR, AND according to the quantifier in that index in the formula
+        list_of_stutter_AV = [] # placeholder to manage stutter quantifier encoding
         changed_hyperproperty = self.initial_hyperproperty.parsed_property
-        while len(changed_hyperproperty.children) > 0 and type(changed_hyperproperty.children[0]) == Token:
+        while len(changed_hyperproperty.children) > 0:
             if changed_hyperproperty.data in ['exist_scheduler', 'forall_scheduler']:
                 changed_hyperproperty = changed_hyperproperty.children[1]
             elif changed_hyperproperty.data == 'exist_state':
-                list_of_AV.append('V')
+                list_of_state_AV.append('V')
                 changed_hyperproperty = changed_hyperproperty.children[1]
             elif changed_hyperproperty.data == 'forall_state':
-                list_of_AV.append('A')
+                list_of_state_AV.append('A')
                 changed_hyperproperty = changed_hyperproperty.children[1]
+            elif changed_hyperproperty.data == 'forall_stutter':
+                list_of_stutter_AV.append('AT')
+                self.state_stutter_mapping[changed_hyperproperty.children[0]] = str(
+                    changed_hyperproperty.children[1].children[0])[1:]
+                changed_hyperproperty = changed_hyperproperty.children[2]
+            elif changed_hyperproperty.data == 'exist_stutter':
+                list_of_stutter_AV.append('VT')
+                self.state_stutter_mapping[changed_hyperproperty.children[0]] = str(
+                    changed_hyperproperty.children[1].children[0])[1:]
+                changed_hyperproperty = changed_hyperproperty.children[2]
+            elif changed_hyperproperty.data in ['quantifiedformulastutter', 'quantifiedformulastate']:
+                changed_hyperproperty = changed_hyperproperty.children[0]
+            else:
+                break
+
         index_of_phi = self.list_of_subformula.index(changed_hyperproperty)
+
+        combined_stutter_range = list(itertools.product(list(range(self.stutterLength)), repeat=len(self.model.getListOfStates())))
+        #TODO:
         list_of_holds = []
 
-        for i in range(len(combined_list_of_states)):
+        for i in range(len(combined_list_of_states_and_stutter)):
             name = "holds_"
             for j in range(self.no_of_state_quantifier):
-                name += str(combined_list_of_states[i][j]) + "_"
+                name += str(combined_list_of_states_and_stutter[i][j]) + "_"
             name += str(index_of_phi)
             self.addToVariableList(name)
             list_of_holds.append(self.listOfBools[self.list_of_bools.index(name)])

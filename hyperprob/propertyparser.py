@@ -199,6 +199,7 @@ def checkQuantifiersMatch():
     # extra TODO: add handling for missing stutter quantifiers (for all state, no stuttering)
     pass
 
+
 def negateForallProperty(parsed_property):
     temp_traversed_property = parsed_property
     while len(temp_traversed_property.children) > 0 and type(temp_traversed_property.children[0]) == Token:
