@@ -1,3 +1,4 @@
+import copy
 import itertools
 
 from lark import Tree
@@ -682,7 +683,7 @@ class SemanticsEncoder:
                 self.no_of_subformula += 1
         return relevant_quantifier
 
-        def encodeNextSemantics(self, hyperproperty, prev_relevant_quantifier=[]):
+    def encodeNextSemantics(self, hyperproperty, prev_relevant_quantifier=[]):
         phi1 = hyperproperty.children[0].children[0]
         index_of_phi1 = self.list_of_subformula.index(phi1)
         index_of_phi = self.list_of_subformula.index(hyperproperty)
