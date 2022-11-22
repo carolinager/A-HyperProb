@@ -31,7 +31,8 @@ class ModelChecker:
     def modelCheck(self):
         non_quantified_property, self.no_of_state_quantifier = propertyparser.findNumberOfStateQuantifier(
             copy.deepcopy(self.initial_hyperproperty.parsed_property))
-        non_quantified_property,  self.no_of_stutter_quantifier = propertyparser.findNumberOfStutterQuantifier(non_quantified_property.children[0])
+        non_quantified_property, self.no_of_stutter_quantifier = propertyparser.findNumberOfStutterQuantifier(
+            non_quantified_property.children[0])
         non_quantified_property = non_quantified_property.children[0]
         start_time = time.perf_counter()
         self.encodeActions()
@@ -39,8 +40,10 @@ class ModelChecker:
         combined_list_of_states = list(
             itertools.product(self.model.getListOfStates(), repeat=self.no_of_state_quantifier))
         combined_list_of_states_with_initial_stutter = list(itertools.product(self.model.getListOfStates(), [0]))
-        extended_states_with_stuttering = list(itertools.product(self.model.getListOfStates(), list(range(self.stutterLength))))
-        combined_list_of_states_with_stutter = list(itertools.product(extended_states_with_stuttering, repeat=self.no_of_stutter_quantifier))
+        #extended_states_with_stuttering = list(
+            #itertools.product(self.model.getListOfStates(), list(range(self.stutterLength))))
+        combined_list_of_states_with_stutter = list(
+            itertools.product(combined_list_of_states_with_initial_stutter, repeat=self.no_of_stutter_quantifier))
 
         if self.initial_hyperproperty.parsed_property.data == 'exist_scheduler':
             self.addToSubformulaList(non_quantified_property)
@@ -56,7 +59,8 @@ class ModelChecker:
             self.printResult(smt_end_time, 'exists')
 
         elif self.initial_hyperproperty.parsed_property.data == 'forall_scheduler':
-            negated_non_quantified_property = propertyparser.negateForallProperty(self.initial_hyperproperty.parsed_property)
+            negated_non_quantified_property = propertyparser.negateForallProperty(
+                self.initial_hyperproperty.parsed_property)
             self.addToSubformulaList(negated_non_quantified_property)
             self.encodeStateAndStutterQuantifiers(combined_list_of_states_with_stutter)
             common.colourinfo("Encoded quantifiers", False)
@@ -154,7 +158,7 @@ class ModelChecker:
 
     def encodeStateAndStutterQuantifiers(self, combined_list_of_states_and_stutter):
         list_of_state_AV = []  # will have the OR, AND according to the quantifier in that index in the formula
-        list_of_stutter_AV = [] # placeholder to manage stutter quantifier encoding
+        list_of_stutter_AV = []  # placeholder to manage stutter quantifier encoding
         # TODO: work to remove assumption of stutter schedulers named in order
         changed_hyperproperty = self.initial_hyperproperty.parsed_property
         while len(changed_hyperproperty.children) > 0:
@@ -181,8 +185,9 @@ class ModelChecker:
 
         index_of_phi = self.list_of_subformula.index(changed_hyperproperty)
 
-        combined_stutter_range = list(itertools.product(list(range(self.stutterLength)), repeat=len(self.model.getListOfStates())))
-        #TODO: naming of tau_i_s in algo line 5
+        combined_stutter_range = list(
+            itertools.product(list(range(self.stutterLength)), repeat=len(self.model.getListOfStates())))
+        # TODO: naming of tau_i_s in algo line 5
         list_of_holds = []
         list_of_precondition = []
         for i in range(len(list_of_stutter_AV)):
@@ -197,8 +202,6 @@ class ModelChecker:
             list_of_precondition.append(list_of_ands)
 
         # TODO: start from the back, compute equation, replace in list, until we are left with the final equation
-
-
 
         for i in range(len(combined_list_of_states_and_stutter)):
             name = "holds_"
@@ -268,7 +271,9 @@ class ModelChecker:
                 common.colouroutput("The property HOLDS!")
         common.colourinfo("\nTime to encode in seconds: " + str(round(smt_end_time, 2)), False)
         common.colourinfo("Time required by z3 in seconds: " + str(round(z3_time, 2)), False)
-        common.colourinfo("Number of variables: " + str(len(self.list_of_ints) + len(self.list_of_reals) + len(self.list_of_bools)), False)
+        common.colourinfo(
+            "Number of variables: " + str(len(self.list_of_ints) + len(self.list_of_reals) + len(self.list_of_bools)),
+            False)
         common.colourinfo("Number of formula checked: " + str(self.no_of_subformula), False)
         common.colourinfo("z3 statistics:", False)
         common.colourinfo(str(statistics), False)
