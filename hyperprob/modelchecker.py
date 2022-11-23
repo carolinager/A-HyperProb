@@ -3,11 +3,12 @@ import time
 import itertools
 
 from lark import Tree
-from z3 import Solver, Bool, Real, Int, Or, sat, And
+from z3 import Solver, Bool, Real, Int, Or, sat, And, Implies
 
 from hyperprob.utility import common
 from hyperprob import propertyparser
 from hyperprob.sementicencoder import SemanticsEncoder
+
 
 
 class ModelChecker:
@@ -211,6 +212,21 @@ class ModelChecker:
             self.addToVariableList(name)
             list_of_holds.append(self.listOfBools[self.list_of_bools.index(name)])
 
+
+        # Now recursively encode stutter schedulers
+        stutter_encoding_i = []
+        stutter_encoding_ipo = []
+        list_of_state_tuples = itertools.product(self.model.getListOfStates(), repeat=self.no_of_stutter_quantifier)
+
+        # initialize stutter_encoding_ipo
+        for state_tuple in list_of_state_tuples:
+            if list_of_stutter_AV[self.no_of_stutter_quantifier - 1] == 'AT':
+                temp = [Implies(list_of_precondition[self.no_of_stutter_quantifier - 1][i], self.fetch_value(list_of_holds, state_tuple)) for i in range(len(combined_stutter_range))]
+            elif list_of_stutter_AV[self.no_of_stutter_quantifier - 1] == 'ET':
+                temp = [And(list_of_precondition[self.no_of_stutter_quantifier - 1][i], self.fetch_value(list_of_holds, state_tuple)) for i in range(len(combined_stutter_range))]
+        # TODO unfinished!
+
+        ######
         list_of_holds_replace = []
         for i in range(self.no_of_state_quantifier - 1, -1, -1):
             count = -1
@@ -277,3 +293,10 @@ class ModelChecker:
         common.colourinfo("Number of formula checked: " + str(self.no_of_subformula), False)
         common.colourinfo("z3 statistics:", False)
         common.colourinfo(str(statistics), False)
+
+    def fetch_value(self, list_with_value, value):
+        # assuming value is a tuple
+        res = 0
+        for i in range(1, len(value)+1):
+            res += value[0] * pow(len(self.model.getListOfStates()), i)
+        return list_with_value[res]
