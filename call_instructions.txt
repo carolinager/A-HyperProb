@@ -1,0 +1,15 @@
+Oyendrila:
+-modelPath
+benchmark/test/mdp_rewards.nm
+-hyperString
+"ES sh . A s1 . A s2 . AT t1 (s2).  ET t2 (s1). ((start0(t1) & start1(t2)) -> (P (X end(t1)) = P (X end(t2))))"
+-stutterLength
+2
+
+Lina:
+-modelPath
+benchmark/test/mdp_rewards.nm
+-hyperString
+"ES sh . A s1 . A s2 . AT t1 (s2).  ET t2 (s1). ((start0(t1) & start1(t2)) -> (P (X end(t1)) = P (X end(t2))))"
+-stutterLength
+2
