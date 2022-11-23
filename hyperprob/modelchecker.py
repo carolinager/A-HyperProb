@@ -216,17 +216,23 @@ class ModelChecker:
         # Now recursively encode stutter schedulers
         stutter_encoding_i = []
         stutter_encoding_ipo = []
-        list_of_state_tuples = itertools.product(self.model.getListOfStates(), repeat=self.no_of_stutter_quantifier)
+        list_of_state_tuples = list(itertools.product(self.model.getListOfStates(), repeat=self.no_of_stutter_quantifier))
 
         # initialize stutter_encoding_ipo
         for state_tuple in list_of_state_tuples:
+            temp = None
+            holds_val = self.fetch_value(list_of_holds, state_tuple)
+            sublist = list_of_precondition[self.no_of_stutter_quantifier - 1]
             if list_of_stutter_AV[self.no_of_stutter_quantifier - 1] == 'AT':
-                temp = [Implies(list_of_precondition[self.no_of_stutter_quantifier - 1][i], self.fetch_value(list_of_holds, state_tuple)) for i in range(len(combined_stutter_range))]
-            elif list_of_stutter_AV[self.no_of_stutter_quantifier - 1] == 'ET':
-                temp = [And(list_of_precondition[self.no_of_stutter_quantifier - 1][i], self.fetch_value(list_of_holds, state_tuple)) for i in range(len(combined_stutter_range))]
+                temp = And([Implies(sublist[i], holds_val) for i in range(len(combined_stutter_range))])
+            elif list_of_stutter_AV[self.no_of_stutter_quantifier - 1] == 'VT':
+                temp = Or([And(sublist[i], holds_val) for i in range(len(combined_stutter_range))])
+            stutter_encoding_ipo.append(temp)
+
+
         # TODO unfinished!
 
-        ######
+        '''
         list_of_holds_replace = []
         for i in range(self.no_of_state_quantifier - 1, -1, -1):
             count = -1
@@ -249,6 +255,7 @@ class ModelChecker:
         self.solver.add(list_of_holds[0])
         list_of_holds.clear()
         list_of_holds_replace.clear()
+        '''
 
     def checkResult(self):
         starting_time = time.perf_counter()
@@ -297,6 +304,6 @@ class ModelChecker:
     def fetch_value(self, list_with_value, value):
         # assuming value is a tuple
         res = 0
-        for i in range(1, len(value)+1):
-            res += value[0] * pow(len(self.model.getListOfStates()), i)
+        for i in range(0, len(value)):
+            res += value[i] * pow(len(self.model.getListOfStates()), len(value)-i-1)
         return list_with_value[res]
