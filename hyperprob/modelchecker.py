@@ -202,8 +202,7 @@ class ModelChecker:
                 list_of_ands.append(And(list_of_eqs))
             list_of_precondition.append(list_of_ands)
 
-        # TODO: start from the back, compute equation, replace in list, until we are left with the final equation
-
+        # create list of holds_(s1,0)_..._0 for all state combinations
         for i in range(len(combined_list_of_states_and_stutter)):
             name = "holds_"
             for j in range(self.no_of_state_quantifier):
@@ -212,26 +211,50 @@ class ModelChecker:
             self.addToVariableList(name)
             list_of_holds.append(self.listOfBools[self.list_of_bools.index(name)])
 
-
-        # Now recursively encode stutter schedulers
+        # encode stutter scheduler quantifiers
         stutter_encoding_i = []
-        stutter_encoding_ipo = []
-        list_of_state_tuples = list(itertools.product(self.model.getListOfStates(), repeat=self.no_of_stutter_quantifier))
+        stutter_encoding_ipo = list_of_holds
+        for quant in range(self.no_of_stutter_quantifier, 0, -1): # n, ..., 1
+            for state_tuple in itertools.product(self.model.getListOfStates(), repeat=self.no_of_stutter_quantifier):
+                list_of_precond = list_of_precondition[quant - 1]  # indexed starting from 0
+                postcond = self.fetch_value(stutter_encoding_ipo, state_tuple)
+                if list_of_stutter_AV[quant - 1] == 'AT':
+                    encoding = And([Implies(list_of_precond[i], postcond) for i in range(len(combined_stutter_range))])
+                elif list_of_stutter_AV[quant - 1] == 'VT':
+                    encoding = Or([And(list_of_precond[i], postcond) for i in range(len(combined_stutter_range))])
+                stutter_encoding_i.append(encoding)
+                self.no_of_subformula += 1
+                # TODO as how many subformulas should this count?
+            # print(stutter_encoding_i[0])
+            stutter_encoding_ipo.clear()
+            stutter_encoding_ipo = copy.deepcopy(stutter_encoding_i)
+            stutter_encoding_i.clear()
 
-        # initialize stutter_encoding_ipo
-        for state_tuple in list_of_state_tuples:
-            temp = None
-            holds_val = self.fetch_value(list_of_holds, state_tuple)
-            sublist = list_of_precondition[self.no_of_stutter_quantifier - 1]
-            if list_of_stutter_AV[self.no_of_stutter_quantifier - 1] == 'AT':
-                temp = And([Implies(sublist[i], holds_val) for i in range(len(combined_stutter_range))])
-            elif list_of_stutter_AV[self.no_of_stutter_quantifier - 1] == 'VT':
-                temp = Or([And(sublist[i], holds_val) for i in range(len(combined_stutter_range))])
-            stutter_encoding_ipo.append(temp)
+        # iteratively encode state quantifiers
+        # TODO adjust if we choose to allow several stutter-quant for a state-quant
+        state_encoding_i = []
+        state_encoding_ipo = copy.deepcopy(stutter_encoding_ipo)
+        for quant in range(self.no_of_stutter_quantifier, 0, -1):
+            n = len(self.model.getListOfStates())
+            len_i = int(len(state_encoding_ipo)/n)
+            #print("State quantifier encoding " + str(quant))
+            if list_of_state_AV[quant - 1] == 'A':
+                '''j = 0
+                print("state quantifier entry " + str(j))
+                print(state_encoding_ipo[(j*n):((j+1)*n)])'''
+                state_encoding_i = [And(state_encoding_ipo[(i*n):((i+1)*n)]) for i in range(len_i)]
+            elif list_of_state_AV[quant - 1] == 'V':
+                state_encoding_i = [Or(state_encoding_ipo[(i*n):((i+1)*n)]) for i in range(len_i)]
+            #print(state_encoding_i[0])
+            self.no_of_subformula += len_i
+            # TODO as how many should this count: 1 or len_i
+            state_encoding_ipo.clear()
+            state_encoding_ipo = copy.deepcopy(state_encoding_i)
+            state_encoding_i.clear()
+        # the formula can now be accessed via state_encoding_ipo[0]
+        # TODO do sth with the encoding
 
-
-        # TODO unfinished!
-
+        # old stuff:
         '''
         list_of_holds_replace = []
         for i in range(self.no_of_state_quantifier - 1, -1, -1):
