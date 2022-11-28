@@ -225,7 +225,7 @@ class ModelChecker:
                 stutter_encoding_i.append(encoding)
                 self.no_of_subformula += 1
                 # TODO as how many subformulas should this count?
-            # print(stutter_encoding_i[0])
+            print(stutter_encoding_i[0])
             stutter_encoding_ipo.clear()
             stutter_encoding_ipo = copy.deepcopy(stutter_encoding_i)
             stutter_encoding_i.clear()
@@ -242,43 +242,17 @@ class ModelChecker:
                 '''j = 0
                 print("state quantifier entry " + str(j))
                 print(state_encoding_ipo[(j*n):((j+1)*n)])'''
-                state_encoding_i = [And(state_encoding_ipo[(i*n):((i+1)*n)]) for i in range(len_i)]
+                state_encoding_i = [And(state_encoding_ipo[(j*n):((j+1)*n)]) for j in range(len_i)]
             elif list_of_state_AV[quant - 1] == 'V':
-                state_encoding_i = [Or(state_encoding_ipo[(i*n):((i+1)*n)]) for i in range(len_i)]
-            #print(state_encoding_i[0])
+                state_encoding_i = [Or(state_encoding_ipo[(j*n):((j+1)*n)]) for j in range(len_i)]
+            print(state_encoding_i[0])
             self.no_of_subformula += len_i
             # TODO as how many should this count: 1 or len_i
             state_encoding_ipo.clear()
             state_encoding_ipo = copy.deepcopy(state_encoding_i)
             state_encoding_i.clear()
         # the formula can now be accessed via state_encoding_ipo[0]
-        # TODO do sth with the encoding
-
-        # old stuff:
-        '''
-        list_of_holds_replace = []
-        for i in range(self.no_of_state_quantifier - 1, -1, -1):
-            count = -1
-            limit = len(list_of_holds)
-            quo = 0
-            for j in range(limit):
-                count += 1
-                if count == len(self.model.getListOfStates()) - 1:
-                    index = quo * len(self.model.getListOfStates())
-                    if list_of_state_AV[i] == 'V':
-                        list_of_holds_replace.append(Or([par for par in list_of_holds[index:index + count + 1]]))
-                        self.no_of_subformula += 1
-                    elif list_of_state_AV[i] == 'A':
-                        list_of_holds_replace.append(And([par for par in list_of_holds[index:index + count + 1]]))
-                        self.no_of_subformula += 1
-                    count = -1
-                    quo += 1
-            list_of_holds = copy.deepcopy(list_of_holds_replace)
-            list_of_holds_replace.clear()
-        self.solver.add(list_of_holds[0])
-        list_of_holds.clear()
-        list_of_holds_replace.clear()
-        '''
+        self.solver.add(state_encoding_ipo[0])
 
     def checkResult(self):
         starting_time = time.perf_counter()

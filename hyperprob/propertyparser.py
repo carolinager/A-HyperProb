@@ -202,25 +202,35 @@ def checkQuantifiersMatch():
 
 def negateForallProperty(parsed_property):
     temp_traversed_property = parsed_property
-    while len(temp_traversed_property.children) > 0 and type(temp_traversed_property.children[0]) == Token:
+    index_for_child = -1
+    while len(temp_traversed_property.children) > 0:
         if temp_traversed_property.data == 'forall_scheduler':
             temp_traversed_property.data = 'exist_scheduler'
+            index_for_child = 1
         elif temp_traversed_property.data == 'exist_state':
             temp_traversed_property.data = 'forall_state'
+            index_for_child = 1
         elif temp_traversed_property.data == 'forall_state':
             temp_traversed_property.data = 'exist_state'
+            index_for_child = 1
+        elif temp_traversed_property.data == 'exist_stutter':
+            temp_traversed_property.data = 'forall_stutter'
+            index_for_child = 2
+        elif temp_traversed_property.data == 'forall_stutter':
+            temp_traversed_property.data = 'exist_stutter'
+            index_for_child = 2
         elif temp_traversed_property.data == 'not':
             pass
-        if temp_traversed_property.children[1].data in ['exist_state', 'forall_state']:
-            temp_traversed_property = temp_traversed_property.children[1]
-        else:
+        if temp_traversed_property.children[index_for_child].data in ['exist_state', 'forall_state', 'exist_stutter', 'forall_stutter']:
+            temp_traversed_property = temp_traversed_property.children[index_for_child]
+        elif temp_traversed_property.children[index_for_child].data in ['quantifiedformulastate']:
+            temp_traversed_property = temp_traversed_property.children[1].children[0]
+        elif temp_traversed_property.children[index_for_child].data in ['quantifiedformulastutter']:
+            temp_traversed_property = temp_traversed_property.children[index_for_child]
             break
-    if temp_traversed_property.children[1].data == 'not':
-        temp_traversed_property.children[1] = temp_traversed_property.children[1].children[0]
+    if temp_traversed_property.children[0].data == 'not':
+        temp_traversed_property.children[0] = temp_traversed_property.children[0].children[0]
     else:
-        temp_traversed_property.children[1] = Tree('not', [temp_traversed_property.children[1]])
+        temp_traversed_property.children[0] = Tree('not', [temp_traversed_property.children[0]])
 
-    while len(temp_traversed_property.children) > 0 and type(temp_traversed_property.children[0]) == Token:
-        if temp_traversed_property.data in ['exist_scheduler', 'forall_scheduler', 'exist_state', 'forall_state']:
-            temp_traversed_property = temp_traversed_property.children[1]
-    return temp_traversed_property
+    return temp_traversed_property.children[0]
