@@ -15,8 +15,10 @@ def extendWithoutDuplicates(list1, list2):
 
 
 class SemanticsEncoder:
-    def __init__(self, model, solver, list_of_subformula, list_of_bools, listOfBools, list_of_ints, listOfInts,
-                 no_of_subformula, no_of_state_quantifier):
+
+    def __init__(self, model,
+                 solver, list_of_subformula, list_of_bools, listOfBools, list_of_ints, listOfInts, no_of_subformula,
+                 no_of_state_quantifier, no_of_stutter_quantifier, lengthOfStutter, stutter_state_mapping):
         self.model = model
         self.solver = solver
         self.list_of_subformula = list_of_subformula
@@ -28,6 +30,11 @@ class SemanticsEncoder:
         self.listOfInts = listOfInts
         self.no_of_subformula = no_of_subformula
         self.no_of_state_quantifier = no_of_state_quantifier
+        self.no_of_stutter_quantifier = no_of_stutter_quantifier
+        self.stutterLength = lengthOfStutter  # default value 1 (no stutter)
+        self.stutter_state_mapping = stutter_state_mapping
+
+
 
     def encodeSemantics(self, hyperproperty, prev_relevant_quantifier=[]):
         relevant_quantifier = []
@@ -37,7 +44,7 @@ class SemanticsEncoder:
         if hyperproperty.data == 'true':
             index_of_phi = self.list_of_subformula.index(hyperproperty)
             name = "holds"
-            r_state = [0 for ind in range(self.no_of_state_quantifier)]
+            r_state = [(0,0) for ind in range(self.no_of_stutter_quantifier)]
             for ind in r_state:
                 name += "_" + str(ind)
             name += '_' + str(index_of_phi)
@@ -48,10 +55,12 @@ class SemanticsEncoder:
 
         elif hyperproperty.data == 'atomic_proposition':
             ap_name = hyperproperty.children[0].children[0].value  # gets the name of the proposition
-            proposition_relevant_quantifier = int(hyperproperty.children[1].children[0].value[1])  # gets the
+            proposition_relevant_stutter = int(hyperproperty.children[1].children[0].value[1])  # relevant stutter quantifier
+            # TODO find relevant state
+            proposition_relevant_state = self.stutter_state_mapping[proposition_relevant_stutter]
             labeling = self.model.parsed_model.labeling
-            if proposition_relevant_quantifier not in relevant_quantifier:
-                relevant_quantifier.append(proposition_relevant_quantifier)
+            if proposition_relevant_stutter not in relevant_quantifier:
+                relevant_quantifier.append(proposition_relevant_stutter)
             and_for_yes = set()
             and_for_no = set()
             list_of_state_with_ap = []
@@ -60,6 +69,8 @@ class SemanticsEncoder:
             for state in self.model.getListOfStates():
                 if ap_name in labeling.get_labels_of_state(state):
                     list_of_state_with_ap.append(state)
+            # TODO check each state only once and add holds / doesnt hold for all stutterLength
+            # TODO dont have to create whole combined_state list but just loop through 'normal' state tuples and then once we checked loop then loop over all stutterLengths
             combined_state_list = self.generateComposedStates(relevant_quantifier)
             for r_state in combined_state_list:
                 name = 'holds'
@@ -67,7 +78,7 @@ class SemanticsEncoder:
                     name += "_" + str(ind)
                 name += '_' + str(index_of_phi)
                 self.addToVariableList(name)
-                if r_state[proposition_relevant_quantifier - 1] in list_of_state_with_ap:
+                if r_state[proposition_relevant_stutter - 1][0] in list_of_state_with_ap:
                     and_for_yes.add(self.listOfBools[self.list_of_bools.index(name)])
                 else:
                     and_for_no.add(Not(self.listOfBools[self.list_of_bools.index(name)]))
@@ -580,12 +591,15 @@ class SemanticsEncoder:
         :param list_of_relevant_quantifier: ranges from value 1- (no. of quantifiers)
         :return: list of composed states.
         """
+        states_with_stuttering = list(
+            itertools.product(self.model.getListOfStates(), list(range(self.stutterLength))))
+
         stored_list = []
         for quant in range(1, self.no_of_state_quantifier + 1):
             if quant in list_of_relevant_quantifier:
-                stored_list.append(self.model.getListOfStates())
+                stored_list.append(states_with_stuttering)
             else:
-                stored_list.append([0])
+                stored_list.append([(0,0)])
         return list(itertools.product(*stored_list))
 
     def encodeNextSemantics(self, hyperproperty, prev_relevant_quantifier):
