@@ -69,19 +69,29 @@ class SemanticsEncoder:
             for state in self.model.getListOfStates():
                 if ap_name in labeling.get_labels_of_state(state):
                     list_of_state_with_ap.append(state)
-            # TODO check each state only once and add holds / doesnt hold for all stutterLength
-            # TODO dont have to create whole combined_state list but just loop through 'normal' state tuples and then once we checked loop then loop over all stutterLengths
-            combined_state_list = self.generateComposedStates(relevant_quantifier)
+            combined_state_list = self.generateComposedStates(relevant_quantifier) # tuples without stutterlength
+            # combined_state_list_with_stutter = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
-                name = 'holds'
-                for ind in r_state:
-                    name += "_" + str(ind)
-                name += '_' + str(index_of_phi)
-                self.addToVariableList(name)
-                if r_state[proposition_relevant_stutter - 1][0] in list_of_state_with_ap:
-                    and_for_yes.add(self.listOfBools[self.list_of_bools.index(name)])
+                # consider all possible stutterLengths for all states in tuple r_state
+                list_of_r_state_with_all_stutterings = [] # TODO naming
+                for stutter_tuple in itertools.product(range(self.stutterLength), repeat=self.no_of_stutter_quantifier):
+                    name = 'holds'
+                    for index in range(self.no_of_stutter_quantifier):
+                        name += "_(" + str(r_state[index]) + ", " + str(stutter_tuple[index]) + ")"
+                    name += '_' + str(index_of_phi)
+                    self.addToVariableList(name) # should look like: holds_(0, 0)_(0, 0)_2
+                    list_of_r_state_with_all_stutterings.append(name)
+
+                # check whether atomic proposition holds or not
+                if r_state[proposition_relevant_stutter - 1] in list_of_state_with_ap:
+                    # TODO or rather r_state[proposition_relevant_state -1] ??
+                    # i.e., index state tuples by state quantifier or by stutter quantifier?
+                    for name in list_of_r_state_with_all_stutterings:
+                        and_for_yes.add(self.listOfBools[self.list_of_bools.index(name)])
+                    # TODO add list to set more efficiently? use set.update(list) ?
                 else:
-                    and_for_no.add(Not(self.listOfBools[self.list_of_bools.index(name)]))
+                    for name in list_of_r_state_with_all_stutterings:
+                        and_for_no.add(Not(self.listOfBools[self.list_of_bools.index(name)]))
             self.solver.add(And(And([par for par in list(and_for_yes)]), And([par for par in list(and_for_no)])))
             self.no_of_subformula += 3
             and_for_yes.clear()
@@ -585,7 +595,7 @@ class SemanticsEncoder:
             self.list_of_ints.append(name)
             self.listOfInts.append(Int(name))
 
-    def generateComposedStates(self, list_of_relevant_quantifier):
+    def generateComposedStatesWithStutter(self, list_of_relevant_quantifier):
         """
         Generates combination of states based on relevant quantifiers
         :param list_of_relevant_quantifier: ranges from value 1- (no. of quantifiers)
@@ -600,6 +610,20 @@ class SemanticsEncoder:
                 stored_list.append(states_with_stuttering)
             else:
                 stored_list.append([(0,0)])
+        return list(itertools.product(*stored_list))
+
+    def generateComposedStates(self, list_of_relevant_quantifier):
+        """
+        Generates combination of states based on relevant quantifiers
+        :param list_of_relevant_quantifier: ranges from value 1- (no. of quantifiers)
+        :return: list of composed states.
+        """
+        stored_list = []
+        for quant in range(1, self.no_of_state_quantifier + 1):
+            if quant in list_of_relevant_quantifier:
+                stored_list.append(self.model.getListOfStates())
+            else:
+                stored_list.append([0])
         return list(itertools.product(*stored_list))
 
     def encodeNextSemantics(self, hyperproperty, prev_relevant_quantifier):
