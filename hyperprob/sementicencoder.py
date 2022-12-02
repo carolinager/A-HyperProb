@@ -57,7 +57,7 @@ class SemanticsEncoder:
             ap_name = hyperproperty.children[0].children[0].value  # gets the name of the proposition
             proposition_relevant_stutter = int(hyperproperty.children[1].children[0].value[1])  # relevant stutter quantifier
             # TODO find relevant state
-            proposition_relevant_state = self.stutter_state_mapping[proposition_relevant_stutter]
+            proposition_relevant_state = self.stutter_state_mapping[proposition_relevant_stutter-1]
             labeling = self.model.parsed_model.labeling
             if proposition_relevant_stutter not in relevant_quantifier:
                 relevant_quantifier.append(proposition_relevant_stutter)
