@@ -57,7 +57,7 @@ class SemanticsEncoder:
             ap_name = hyperproperty.children[0].children[0].value  # gets the name of the proposition
             proposition_relevant_stutter = int(hyperproperty.children[1].children[0].value[1])  # relevant stutter quantifier
             # TODO find relevant state
-            proposition_relevant_state = self.stutter_state_mapping[proposition_relevant_stutter-1]
+            # proposition_relevant_state = self.stutter_state_mapping[proposition_relevant_stutter-1]
             labeling = self.model.parsed_model.labeling
             if proposition_relevant_stutter not in relevant_quantifier:
                 relevant_quantifier.append(proposition_relevant_stutter)
@@ -74,6 +74,7 @@ class SemanticsEncoder:
             for r_state in combined_state_list:
                 # consider all possible stutterLengths for all states in tuple r_state
                 list_of_r_state_with_all_stutterings = [] # TODO naming
+                # TODO would encoding holds_r-state only for stutterLength 0 suffice ? (i.e. is the following loop necessary
                 for stutter_tuple in itertools.product(range(self.stutterLength), repeat=self.no_of_stutter_quantifier):
                     name = 'holds'
                     for index in range(self.no_of_stutter_quantifier):
@@ -104,7 +105,7 @@ class SemanticsEncoder:
             index_of_phi = self.list_of_subformula.index(hyperproperty)
             index_of_phi1 = self.list_of_subformula.index(hyperproperty.children[0])
             index_of_phi2 = self.list_of_subformula.index(hyperproperty.children[1])
-            combined_state_list = self.generateComposedStates(relevant_quantifier)
+            combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'holds'
                 for ind in r_state:
@@ -145,7 +146,7 @@ class SemanticsEncoder:
             index_of_phi = self.list_of_subformula.index(hyperproperty)
             index_of_phi1 = self.list_of_subformula.index(hyperproperty.children[0])
             index_of_phi2 = self.list_of_subformula.index(hyperproperty.children[1])
-            combined_state_list = self.generateComposedStates(relevant_quantifier)
+            combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'holds'
                 for ind in r_state:
@@ -186,7 +187,7 @@ class SemanticsEncoder:
             index_of_phi = self.list_of_subformula.index(hyperproperty)
             index_of_phi1 = self.list_of_subformula.index(hyperproperty.children[0])
             index_of_phi2 = self.list_of_subformula.index(hyperproperty.children[1])
-            combined_state_list = self.generateComposedStates(relevant_quantifier)
+            combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'holds'
                 for ind in r_state:
@@ -227,7 +228,7 @@ class SemanticsEncoder:
             index_of_phi = self.list_of_subformula.index(hyperproperty)
             index_of_phi1 = self.list_of_subformula.index(hyperproperty.children[0])
             index_of_phi2 = self.list_of_subformula.index(hyperproperty.children[1])
-            combined_state_list = self.generateComposedStates(relevant_quantifier)
+            combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'holds'
                 for ind in r_state:
@@ -273,7 +274,7 @@ class SemanticsEncoder:
             index_of_phi = self.list_of_subformula.index(hyperproperty)
             index_of_phi1 = self.list_of_subformula.index(hyperproperty.children[0])
 
-            combined_state_list = self.generateComposedStates(relevant_quantifier)
+            combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'holds'
                 for ind in r_state:
