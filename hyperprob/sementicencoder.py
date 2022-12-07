@@ -684,14 +684,7 @@ class SemanticsEncoder:
                     implies_precedent = And(act_str, stu_str)
                     self.no_of_subformula += 1
 
-                    # TODO continue here
-                    dicts = []
-                    g = 0
-                    for l in relevant_quantifier:
-                        dicts.append(self.model.dict_of_acts_tran[str(r_state[l-1]) + " " + str(ca[g])])
-                        g += 1
-                    combined_succ = list(itertools.product(*dicts))
-
+                    combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
                     first = True
                     prod_left = None
 
@@ -702,7 +695,8 @@ class SemanticsEncoder:
                         prod_left_part = None
                         for l in range(1, self.no_of_state_quantifier + 1):
                             if l in relevant_quantifier:
-                                space = cs[f].find(' ')
+                                # space = cs[f].find(' ')
+                                # TODO:  continue here
                                 succ_state = cs[f][0:space]
                                 holdsToInt_succ += '_' + succ_state
                                 if p_first:
@@ -736,6 +730,24 @@ class SemanticsEncoder:
                     self.solver.add(Implies(implies_precedent, implies_antecedent_and))
                     self.no_of_subformula += 1
         return relevant_quantifier
+
+    def genSuccessors(self, r_state, ca, h_tuple, relevant_quantifier):
+        dicts = []
+        for l in relevant_quantifier:
+            if h_tuple[l-1] == r_state[l-1][1]:
+                succ = (self.model.dict_of_acts_tran[str(r_state[l-1][0]) + " " + str(ca[relevant_quantifier.index(l)])])
+                list_of_all_succ = []
+                for s in succ:
+                    space = s.find(' ')
+                    succ_state = (int(s[0:space]),0)
+                    list_of_all_succ.append([str(succ_state), s[space+1:]])
+            else:
+                list_of_all_succ = [[str((r_state[l - 1][0], r_state[l - 1][1] + 1)), str(1)]]
+            dicts.append(list_of_all_succ)
+        return list(itertools.product(*dicts))
+
+
+
 
     def encodeUnboundedUntilSemantics(self, hyperproperty, relevant_quantifier=[]):
         index_of_phi = self.list_of_subformula.index(hyperproperty)
