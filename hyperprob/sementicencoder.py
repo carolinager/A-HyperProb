@@ -34,8 +34,6 @@ class SemanticsEncoder:
         self.stutterLength = lengthOfStutter  # default value 1 (no stutter)
         self.stutter_state_mapping = stutter_state_mapping
 
-
-
     def encodeSemantics(self, hyperproperty, prev_relevant_quantifier=[]):
         relevant_quantifier = []
         if len(prev_relevant_quantifier) > 0:
@@ -44,7 +42,7 @@ class SemanticsEncoder:
         if hyperproperty.data == 'true':
             index_of_phi = self.list_of_subformula.index(hyperproperty)
             name = "holds"
-            r_state = [(0,0) for ind in range(self.no_of_stutter_quantifier)]
+            r_state = [(0, 0) for ind in range(self.no_of_stutter_quantifier)]
             for ind in r_state:
                 name += "_" + str(ind)
             name += '_' + str(index_of_phi)
@@ -55,7 +53,8 @@ class SemanticsEncoder:
 
         elif hyperproperty.data == 'atomic_proposition':
             ap_name = hyperproperty.children[0].children[0].value  # gets the name of the proposition
-            proposition_relevant_stutter = int(hyperproperty.children[1].children[0].value[1])  # relevant stutter quantifier
+            proposition_relevant_stutter = int(
+                hyperproperty.children[1].children[0].value[1])  # relevant stutter quantifier
             # TODO find relevant state
             # proposition_relevant_state = self.stutter_state_mapping[proposition_relevant_stutter-1]
             labeling = self.model.parsed_model.labeling
@@ -69,18 +68,18 @@ class SemanticsEncoder:
             for state in self.model.getListOfStates():
                 if ap_name in labeling.get_labels_of_state(state):
                     list_of_state_with_ap.append(state)
-            combined_state_list = self.generateComposedStates(relevant_quantifier) # tuples without stutterlength
+            combined_state_list = self.generateComposedStates(relevant_quantifier)  # tuples without stutterlength
             # combined_state_list_with_stutter = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 # consider all possible stutterLengths for all states in tuple r_state
-                list_of_r_state_with_all_stutterings = [] # TODO naming
+                list_of_r_state_with_all_stutterings = []  # TODO naming
                 # TODO would encoding holds_r-state only for stutterLength 0 suffice ? (i.e. is the following loop necessary
                 for stutter_tuple in itertools.product(range(self.stutterLength), repeat=self.no_of_stutter_quantifier):
                     name = 'holds'
                     for index in range(self.no_of_stutter_quantifier):
                         name += "_(" + str(r_state[index]) + ", " + str(stutter_tuple[index]) + ")"
                     name += '_' + str(index_of_phi)
-                    self.addToVariableList(name) # should look like: holds_(0, 0)_(0, 0)_2
+                    self.addToVariableList(name)  # should look like: holds_(0, 0)_(0, 0)_2
                     list_of_r_state_with_all_stutterings.append(name)
 
                 # check whether atomic proposition holds or not
@@ -117,7 +116,7 @@ class SemanticsEncoder:
                     if (ind + 1) in rel_quant1:
                         name2 += "_" + str(r_state[ind])
                     else:
-                        name2 += "_" + str((0,0))
+                        name2 += "_" + str((0, 0))
                 name2 += '_' + str(index_of_phi1)
                 self.addToVariableList(name2)
                 name3 = 'holds'
@@ -125,7 +124,7 @@ class SemanticsEncoder:
                     if (ind + 1) in rel_quant2:
                         name3 += "_" + str(r_state[ind])
                     else:
-                        name3 += "_" + str((0,0))
+                        name3 += "_" + str((0, 0))
                         # TODO does this placeholder suffice
                 name3 += '_' + str(index_of_phi2)
                 self.addToVariableList(name3)
@@ -524,7 +523,7 @@ class SemanticsEncoder:
             constant = RealVal(hyperproperty.children[0].value).as_fraction().limit_denominator(10000)
             index_of_phi = self.list_of_subformula.index(hyperproperty)
             name = "prob"
-            r_state = [(0,0) for _ in range(self.no_of_stutter_quantifier)]
+            r_state = [(0, 0) for _ in range(self.no_of_stutter_quantifier)]
             # TODO does this suffice or do we need to encode all possible stutterings
             for ind in r_state:
                 name += "_" + str(ind)
@@ -533,7 +532,7 @@ class SemanticsEncoder:
             self.solver.add(self.listOfReals[self.list_of_reals.index(name)] == constant)
             self.no_of_subformula += 1
             return relevant_quantifier
-        
+
         elif hyperproperty.data in ['add_probability', 'subtract_probability', 'multiply_probability']:
             rel_quant1 = self.encodeSemantics(hyperproperty.children[0])
             rel_quant2 = self.encodeSemantics(hyperproperty.children[1])
@@ -588,7 +587,7 @@ class SemanticsEncoder:
             self.encodeSemantics(hyperproperty.children[0])
 
     def addToVariableList(self, name):
-    # TODO reuse nethod in modelchecker
+        # TODO reuse nethod in modelchecker
         if name[0] == 'h' and not name.startswith('holdsToInt') and name not in self.list_of_bools:
             self.list_of_bools.append(name)
             self.listOfBools.append(Bool(name))
@@ -613,7 +612,7 @@ class SemanticsEncoder:
             if quant in list_of_relevant_quantifier:
                 stored_list.append(states_with_stuttering)
             else:
-                stored_list.append([(0,0)])
+                stored_list.append([(0, 0)])
         return list(itertools.product(*stored_list))
 
     def generateComposedStates(self, list_of_relevant_quantifier):
@@ -671,61 +670,44 @@ class SemanticsEncoder:
                     self.addToVariableList(stu_name)
 
                     act_str = self.listOfInts[self.list_of_ints.index(name)] == int(ca[0])
-                    stu_str = self.listOfInts[self.list_of_ints.index(stu_name)] == int(h_tuple[relevant_quantifier[0]-1])
+                    stu_str = self.listOfInts[self.list_of_ints.index(stu_name)] == int(
+                        h_tuple[relevant_quantifier[0] - 1])
                     if len(relevant_quantifier) > 1:
                         for l in range(1, len(relevant_quantifier)):
                             name = 'a_' + str(r_state[relevant_quantifier[l] - 1][0])
                             self.addToVariableList(name)
-                            stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(r_state[relevant_quantifier[l] - 1][0])
+                            stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
+                                r_state[relevant_quantifier[l] - 1][0])
                             self.addToVariableList(stu_name)
 
-                            act_str = And(act_str, self.listOfInts[self.list_of_ints.index(name)] == int(ca[l-1]))
-                            stu_str = And(stu_str, self.listOfInts[self.list_of_ints.index(stu_name)] == int(h_tuple[relevant_quantifier[l]-1]))
+                            act_str = And(act_str, self.listOfInts[self.list_of_ints.index(name)] == int(ca[l - 1]))
+                            stu_str = And(stu_str, self.listOfInts[self.list_of_ints.index(stu_name)] == int(
+                                h_tuple[relevant_quantifier[l] - 1]))
                     implies_precedent = And(act_str, stu_str)
                     self.no_of_subformula += 1
 
                     combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
-                    first = True
-                    prod_left = None
+                    sum_left = RealVal(0).as_fraction()
 
                     for cs in combined_succ:
-                        f = 0
                         holdsToInt_succ = 'holdsToInt'
-                        p_first = True
-                        prod_left_part = None
-                        for l in range(1, self.no_of_state_quantifier + 1):
+                        prod_left_part = RealVal(1).as_fraction()
+                        for l in range(1, self.no_of_stutter_quantifier + 1):
                             if l in relevant_quantifier:
-                                # space = cs[f].find(' ')
-                                # TODO:  continue here
-                                succ_state = cs[f][0:space]
+                                succ_state = cs[relevant_quantifier.index(l)][0]
                                 holdsToInt_succ += '_' + succ_state
-                                if p_first:
-                                    prod_left_part = RealVal(cs[f][space + 1:]).as_fraction()
-                                    p_first = False
-                                else:
-                                    prod_left_part *= RealVal(cs[f][space + 1:]).as_fraction()
-                                f += 1
-
+                                prod_left_part *= RealVal(cs[relevant_quantifier.index(l)][1]).as_fraction()
                             else:
-                                holdsToInt_succ += '_' + str(0)
-                                if p_first:
-                                    prod_left_part = RealVal(1).as_fraction()
-                                    p_first = False
-                                else:
-                                    prod_left_part *= RealVal(1).as_fraction()
+                                holdsToInt_succ += '_' + str((0, 0))
 
                         holdsToInt_succ += '_' + str(index_of_phi1)
                         self.addToVariableList(holdsToInt_succ)
                         prod_left_part *= self.listOfReals[self.list_of_reals.index(holdsToInt_succ)]
 
-                        if first:
-                            prod_left = prod_left_part
-                            first = False
-                        else:
-                            prod_left += prod_left_part
+                        sum_left += prod_left_part
                         self.no_of_subformula += 1
 
-                    implies_antecedent_and = self.listOfReals[self.list_of_reals.index(prob_phi)] == prod_left
+                    implies_antecedent_and = self.listOfReals[self.list_of_reals.index(prob_phi)] == sum_left
                     self.no_of_subformula += 1
                     self.solver.add(Implies(implies_precedent, implies_antecedent_and))
                     self.no_of_subformula += 1
@@ -734,20 +716,18 @@ class SemanticsEncoder:
     def genSuccessors(self, r_state, ca, h_tuple, relevant_quantifier):
         dicts = []
         for l in relevant_quantifier:
-            if h_tuple[l-1] == r_state[l-1][1]:
-                succ = (self.model.dict_of_acts_tran[str(r_state[l-1][0]) + " " + str(ca[relevant_quantifier.index(l)])])
+            if h_tuple[l - 1] == r_state[l - 1][1]:
+                succ = (
+                self.model.dict_of_acts_tran[str(r_state[l - 1][0]) + " " + str(ca[relevant_quantifier.index(l)])])
                 list_of_all_succ = []
                 for s in succ:
                     space = s.find(' ')
-                    succ_state = (int(s[0:space]),0)
-                    list_of_all_succ.append([str(succ_state), s[space+1:]])
+                    succ_state = (int(s[0:space]), 0)
+                    list_of_all_succ.append([str(succ_state), s[space + 1:]])
             else:
                 list_of_all_succ = [[str((r_state[l - 1][0], r_state[l - 1][1] + 1)), str(1)]]
             dicts.append(list_of_all_succ)
         return list(itertools.product(*dicts))
-
-
-
 
     def encodeUnboundedUntilSemantics(self, hyperproperty, relevant_quantifier=[]):
         index_of_phi = self.list_of_subformula.index(hyperproperty)
@@ -1274,7 +1254,8 @@ class SemanticsEncoder:
                 self.no_of_subformula += 1
                 prod_right_or = Or([par for par in list_of_ors])
                 self.no_of_subformula += 1
-                implies_antecedent_and2 = Implies(self.listOfReals[self.list_of_reals.index(prob_phi)] > 0, prod_right_or)
+                implies_antecedent_and2 = Implies(self.listOfReals[self.list_of_reals.index(prob_phi)] > 0,
+                                                  prod_right_or)
                 self.no_of_subformula += 1
                 implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
                 self.no_of_subformula += 1
