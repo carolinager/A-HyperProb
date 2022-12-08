@@ -655,35 +655,29 @@ class SemanticsEncoder:
             self.no_of_subformula += 3
             self.solver.add(first_and)
 
-            dicts = []
+            dicts_act = []
+            dicts_stutter = []
             for l in relevant_quantifier:
-                dicts.append(self.model.dict_of_acts[r_state[l - 1][0]])
-            combined_acts = list(itertools.product(*dicts))
+                dicts_act.append(self.model.dict_of_acts[r_state[l - 1][0]])
+                dicts_stutter.append(list(range(self.stutterLength)))
+            combined_acts = list(itertools.product(*dicts_act))
+            combined_stutters = list(itertools.product(*dicts_stutter))
 
             # TODO optimize creation of h_tuple list
 
             for ca in combined_acts:
-                for h_tuple in itertools.product(range(self.stutterLength), repeat=self.no_of_stutter_quantifier):
-                    name = 'a_' + str(r_state[relevant_quantifier[0] - 1][0])
-                    self.addToVariableList(name)
-                    stu_name = 't_' + str(relevant_quantifier[0]) + '_' + str(r_state[relevant_quantifier[0] - 1][0])
-                    self.addToVariableList(stu_name)
-
-                    act_str = self.listOfInts[self.list_of_ints.index(name)] == int(ca[0])
-                    stu_str = self.listOfInts[self.list_of_ints.index(stu_name)] == int(
-                        h_tuple[relevant_quantifier[0] - 1])
-                    if len(relevant_quantifier) > 1:
-                        for l in range(1, len(relevant_quantifier)):
-                            name = 'a_' + str(r_state[relevant_quantifier[l] - 1][0])
-                            self.addToVariableList(name)
-                            stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
-                                r_state[relevant_quantifier[l] - 1][0])
-                            self.addToVariableList(stu_name)
-
-                            act_str = And(act_str, self.listOfInts[self.list_of_ints.index(name)] == int(ca[l - 1]))
-                            stu_str = And(stu_str, self.listOfInts[self.list_of_ints.index(stu_name)] == int(
-                                h_tuple[relevant_quantifier[l] - 1]))
-                    implies_precedent = And(act_str, stu_str)
+                for h_tuple in combined_stutters:
+                    act_stu_str_list = []
+                    for l in range(len(relevant_quantifier)):
+                        name = 'a_' + str(r_state[relevant_quantifier[l] - 1][0])
+                        self.addToVariableList(name)
+                        stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
+                            r_state[relevant_quantifier[l] - 1][0])
+                        self.addToVariableList(stu_name)
+                        act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(name)] == int(ca[l]))
+                        act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(stu_name)] == int(h_tuple[l]))
+                    implies_precedent = And(act_stu_str_list)
+                    print(self.solver.check())
                     self.no_of_subformula += 1
 
                     combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
@@ -1146,7 +1140,7 @@ class SemanticsEncoder:
         index_of_phi = self.list_of_subformula.index(hyperproperty)
         rel_quant = self.encodeSemantics(phi1)
         relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
-        combined_state_list = self.generateComposedStates(relevant_quantifier)
+        combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
 
         for r_state in combined_state_list:
             holds1 = 'holds'
@@ -1167,7 +1161,7 @@ class SemanticsEncoder:
 
             dicts = []
             for l in relevant_quantifier:
-                dicts.append(self.model.dict_of_acts[r_state[l - 1]])
+                dicts.append(self.model.dict_of_acts[r_state[l - 1][0]])
             combined_acts = list(itertools.product(*dicts))
 
             for ca in combined_acts:
