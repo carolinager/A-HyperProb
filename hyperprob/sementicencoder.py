@@ -663,7 +663,6 @@ class SemanticsEncoder:
             combined_acts = list(itertools.product(*dicts_act))
             combined_stutters = list(itertools.product(*dicts_stutter))
 
-            # TODO optimize creation of h_tuple list
 
             for ca in combined_acts:
                 for h_tuple in combined_stutters:
@@ -733,7 +732,7 @@ class SemanticsEncoder:
         index_of_phi2 = self.list_of_subformula.index(phi2)
         rel_quant2 = self.encodeSemantics(phi2)
         relevant_quantifier = extendWithoutDuplicates(rel_quant2, relevant_quantifier)
-        combined_state_list = self.generateComposedStates(relevant_quantifier)
+        combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
 
         for r_state in combined_state_list:
             holds1 = 'holds'
@@ -766,104 +765,82 @@ class SemanticsEncoder:
                                 new_prob_const)
             self.no_of_subformula += 3
 
-            dicts = []
+            dicts_act = []
+            dicts_stutter = []
             for l in relevant_quantifier:
-                dicts.append(self.model.dict_of_acts[r_state[l - 1]])
-            combined_acts = list(itertools.product(*dicts))
+                dicts_act.append(self.model.dict_of_acts[r_state[l - 1][0]])
+                dicts_stutter.append(list(range(self.stutterLength)))
+            combined_acts = list(itertools.product(*dicts_act))
+            combined_stutters = list(itertools.product(*dicts_stutter))
 
             for ca in combined_acts:
-                name = 'a_' + str(r_state[relevant_quantifier[0] - 1])
-                self.addToVariableList(name)
-                act_str = self.listOfInts[self.list_of_ints.index(name)] == int(ca[0])
-                if len(relevant_quantifier) > 1:
-                    for l in range(2, len(relevant_quantifier) + 1):
-                        name = 'a_' + str(relevant_quantifier[l - 1] - 1)
+                for h_tuple in combined_stutters:
+                    act_stu_str_list = []
+                    for l in range(len(relevant_quantifier)):
+                        name = 'a_' + str(r_state[relevant_quantifier[l] - 1][0])
                         self.addToVariableList(name)
-                        act_str = And(act_str, self.listOfInts[self.list_of_ints.index(name)] == int(ca[l - 1]))
-
-                implies_precedent = And(self.listOfBools[self.list_of_bools.index(holds1)],
-                                        Not(self.listOfBools[self.list_of_bools.index(holds2)]), act_str)
-                self.no_of_subformula += 2
-
-                dicts = []
-                g = 0
-                for l in relevant_quantifier:
-                    dicts.append(self.model.dict_of_acts_tran[str(r_state[l - 1]) + " " + str(ca[g])])
-                    g += 1
-                combined_succ = list(itertools.product(*dicts))
-
-                first = True
-                prod_left = None
-                list_of_ors = []
-
-                for cs in combined_succ:
-                    f = 0
-                    prob_succ = 'prob'
-                    holds_succ = 'holds'
-                    d_current = 'd'
-                    d_succ = 'd'
-                    p_first = True
-                    prod_left_part = None
-                    for l in range(1, self.no_of_state_quantifier + 1):
-                        if l in relevant_quantifier:
-                            space = cs[f].find(' ')
-                            succ_state = cs[f][0:space]
-                            prob_succ += '_' + succ_state
-                            holds_succ += '_' + succ_state
-                            d_succ += '_' + succ_state
-                            if p_first:
-                                prod_left_part = RealVal(cs[f][space + 1:]).as_fraction()
-                                p_first = False
-                            else:
-                                prod_left_part *= RealVal(cs[f][space + 1:]).as_fraction()
-                            f += 1
-
-                        else:
-                            prob_succ += '_' + str(0)
-                            holds_succ += '_' + str(0)
-                            d_succ += '_' + str(0)
-                            if p_first:
-                                prod_left_part = RealVal(1).as_fraction()
-                                p_first = False
-                            else:
-                                prod_left_part *= RealVal(1).as_fraction()
-                        d_current += '_' + str(r_state[l - 1])
-
-                    prob_succ += '_' + str(index_of_phi)
-                    self.addToVariableList(prob_succ)
-                    holds_succ += '_' + str(index_of_phi2)
-                    self.addToVariableList(holds_succ)
-
-                    d_current += '_' + str(index_of_phi2)
-                    self.addToVariableList(d_current)
-                    d_succ += '_' + str(index_of_phi2)
-                    self.addToVariableList(d_succ)
-                    prod_left_part *= self.listOfReals[self.list_of_reals.index(prob_succ)]
-
-                    if first:
-                        prod_left = prod_left_part
-                        first = False
-                    else:
-                        prod_left += prod_left_part
-                    self.no_of_subformula += 1
-
-                    list_of_ors.append(Or(self.listOfBools[self.list_of_bools.index(holds_succ)],
-                                          self.listOfReals[self.list_of_reals.index(d_current)] > self.listOfReals[
-                                              self.list_of_reals.index(d_succ)]))
-
+                        stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
+                            r_state[relevant_quantifier[l] - 1][0])
+                        self.addToVariableList(stu_name)
+                        act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(name)] == int(ca[l]))
+                        act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(stu_name)] == int(h_tuple[l]))
+                    implies_precedent = And(self.listOfBools[self.list_of_bools.index(holds1)], Not(self.listOfBools[self.list_of_bools.index(holds2)]), And(act_stu_str_list))
                     self.no_of_subformula += 2
 
-                implies_antecedent_and1 = self.listOfReals[self.list_of_reals.index(prob_phi)] == prod_left
-                self.no_of_subformula += 1
-                prod_right_or = Or([par for par in list_of_ors])
-                self.no_of_subformula += 1
-                implies_antecedent_and2 = Implies(self.listOfReals[self.list_of_reals.index(prob_phi)] > 0,
-                                                  prod_right_or)
-                self.no_of_subformula += 1
-                implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
-                self.no_of_subformula += 1
-                self.solver.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
-                self.no_of_subformula += 1
+                    combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
+                    sum_left = RealVal(0).as_fraction()
+                    list_of_ors = []
+
+                    for cs in combined_succ:
+                        prob_succ = 'prob'
+                        holds_succ = 'holds'
+                        d_current = 'd'
+                        d_succ = 'd'
+                        prod_left_part = RealVal(1).as_fraction()
+                        for l in range(1, self.no_of_state_quantifier + 1):
+                            if l in relevant_quantifier:
+                                succ_state = cs[relevant_quantifier.index(l)][0]
+                                prob_succ += '_' + succ_state
+                                holds_succ += '_' + succ_state
+                                d_succ += '_' + succ_state
+                                prod_left_part *= RealVal(cs[relevant_quantifier.index(l)][1]).as_fraction()
+                            else:
+                                prob_succ += '_' + str((0, 0))
+                                holds_succ += '_' + str((0, 0))
+                                d_succ += '_' + str((0, 0))
+                            d_current += '_' + str(r_state[l - 1])
+
+                        prob_succ += '_' + str(index_of_phi)
+                        self.addToVariableList(prob_succ)
+                        holds_succ += '_' + str(index_of_phi2)
+                        self.addToVariableList(holds_succ)
+
+                        d_current += '_' + str(index_of_phi2)
+                        self.addToVariableList(d_current)
+                        d_succ += '_' + str(index_of_phi2)
+                        self.addToVariableList(d_succ)
+                        prod_left_part *= self.listOfReals[self.list_of_reals.index(prob_succ)]
+
+                        sum_left += prod_left_part
+                        self.no_of_subformula += 1
+
+                        list_of_ors.append(Or(self.listOfBools[self.list_of_bools.index(holds_succ)],
+                                              self.listOfReals[self.list_of_reals.index(d_current)] > self.listOfReals[
+                                                  self.list_of_reals.index(d_succ)]))
+
+                        self.no_of_subformula += 2
+
+                    implies_antecedent_and1 = self.listOfReals[self.list_of_reals.index(prob_phi)] == sum_left
+                    self.no_of_subformula += 1
+                    prod_right_or = Or(list_of_ors)
+                    self.no_of_subformula += 1
+                    implies_antecedent_and2 = Implies(self.listOfReals[self.list_of_reals.index(prob_phi)] > 0,
+                                                      prod_right_or)
+                    self.no_of_subformula += 1
+                    implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
+                    self.no_of_subformula += 1
+                    self.solver.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
+                    self.no_of_subformula += 1
 
         return relevant_quantifier
 
@@ -1159,100 +1136,79 @@ class SemanticsEncoder:
                                 new_prob_const_0, new_prob_const_1)
             self.no_of_subformula += 1
 
-            dicts = []
+            dicts_act = []
+            dicts_stutter = []
             for l in relevant_quantifier:
-                dicts.append(self.model.dict_of_acts[r_state[l - 1][0]])
-            combined_acts = list(itertools.product(*dicts))
+                dicts_act.append(self.model.dict_of_acts[r_state[l - 1][0]])
+                dicts_stutter.append(list(range(self.stutterLength)))
+            combined_acts = list(itertools.product(*dicts_act))
+            combined_stutters = list(itertools.product(*dicts_stutter))
 
             for ca in combined_acts:
-                name = 'a_' + str(r_state[relevant_quantifier[0] - 1])
-                self.addToVariableList(name)
-                act_str = self.listOfInts[self.list_of_ints.index(name)] == int(ca[0])
-                if len(relevant_quantifier) > 1:
-                    for l in range(2, len(relevant_quantifier) + 1):
-                        name = 'a_' + str(relevant_quantifier[l - 1] - 1)
+                for h_tuple in combined_stutters:
+                    act_stu_str_list = []
+                    for l in range(len(relevant_quantifier)):
+                        name = 'a_' + str(r_state[relevant_quantifier[l] - 1][0])
                         self.addToVariableList(name)
-                        act_str = And(act_str, self.listOfInts[self.list_of_ints.index(name)] == int(ca[l - 1]))
-
-                implies_precedent = And(Not(self.listOfBools[self.list_of_bools.index(holds1)]), act_str)
-                self.no_of_subformula += 2
-
-                dicts = []
-                g = 0
-                for l in relevant_quantifier:
-                    dicts.append(self.model.dict_of_acts_tran[str(r_state[l - 1]) + " " + str(ca[g])])
-                    g += 1
-                combined_succ = list(itertools.product(*dicts))
-
-                first = True
-                prod_left = None
-                list_of_ors = []
-
-                for cs in combined_succ:
-                    f = 0
-                    prob_succ = 'prob'
-                    holds_succ = 'holds'
-                    d_current = 'd'
-                    d_succ = 'd'
-                    p_first = True
-                    prod_left_part = None
-                    for l in range(1, self.no_of_state_quantifier + 1):
-                        if l in relevant_quantifier:
-                            space = cs[f].find(' ')
-                            succ_state = cs[f][0:space]
-                            prob_succ += '_' + succ_state
-                            holds_succ += '_' + succ_state
-                            d_succ += '_' + succ_state
-                            if p_first:
-                                prod_left_part = RealVal(cs[f][space + 1:]).as_fraction()
-                                p_first = False
-                            else:
-                                prod_left_part *= RealVal(cs[f][space + 1:]).as_fraction()
-                            f += 1
-
-                        else:
-                            prob_succ += '_' + str(0)
-                            holds_succ += '_' + str(0)
-                            d_succ += '_' + str(0)
-                            if p_first:
-                                prod_left_part = RealVal(1).as_fraction()
-                                p_first = False
-                            else:
-                                prod_left_part *= RealVal(1).as_fraction()
-                        d_current += '_' + str(r_state[l - 1])
-
-                    prob_succ += '_' + str(index_of_phi)
-                    self.addToVariableList(prob_succ)
-                    holds_succ += '_' + str(index_of_phi1)
-                    self.addToVariableList(holds_succ)
-                    d_current += '_' + str(index_of_phi1)
-                    self.addToVariableList(d_current)
-                    d_succ += '_' + str(index_of_phi1)
-                    self.addToVariableList(d_succ)
-                    prod_left_part *= self.listOfReals[self.list_of_reals.index(prob_succ)]
-
-                    if first:
-                        prod_left = prod_left_part
-                        first = False
-                    else:
-                        prod_left += prod_left_part
-                    self.no_of_subformula += 1
-
-                    list_of_ors.append(Or(self.listOfBools[self.list_of_bools.index(holds_succ)],
-                                          self.listOfReals[self.list_of_reals.index(d_current)] > self.listOfReals[
-                                              self.list_of_reals.index(d_succ)]))
-
+                        stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
+                            r_state[relevant_quantifier[l] - 1][0])
+                        self.addToVariableList(stu_name)
+                        act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(name)] == int(ca[l]))
+                        act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(stu_name)] == int(h_tuple[l]))
+                    implies_precedent = And(Not(self.listOfBools[self.list_of_bools.index(holds1)]), And(act_stu_str_list))
                     self.no_of_subformula += 2
 
-                implies_antecedent_and1 = self.listOfReals[self.list_of_reals.index(prob_phi)] == prod_left
-                self.no_of_subformula += 1
-                prod_right_or = Or([par for par in list_of_ors])
-                self.no_of_subformula += 1
-                implies_antecedent_and2 = Implies(self.listOfReals[self.list_of_reals.index(prob_phi)] > 0,
-                                                  prod_right_or)
-                self.no_of_subformula += 1
-                implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
-                self.no_of_subformula += 1
-                self.solver.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
-                self.no_of_subformula += 1
+                    combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
+                    sum_left = RealVal(0).as_fraction()
+                    list_of_ors = []
+
+                    for cs in combined_succ:
+                        prob_succ = 'prob'
+                        holds_succ = 'holds'
+                        d_current = 'd'
+                        d_succ = 'd'
+                        prod_left_part = RealVal(1).as_fraction()
+                        for l in range(1, self.no_of_state_quantifier + 1):
+                            if l in relevant_quantifier:
+                                succ_state = cs[relevant_quantifier.index(l)][0]
+                                prob_succ += '_' + succ_state
+                                holds_succ += '_' + succ_state
+                                d_succ += '_' + succ_state
+                                prod_left_part *= RealVal(cs[relevant_quantifier.index(l)][1]).as_fraction()
+                            else:
+                                prob_succ += '_' + str((0,0))
+                                holds_succ += '_' + str((0,0))
+                                d_succ += '_' + str((0,0))
+                            d_current += '_' + str(r_state[l - 1])
+
+                        prob_succ += '_' + str(index_of_phi)
+                        self.addToVariableList(prob_succ)
+                        holds_succ += '_' + str(index_of_phi1)
+                        self.addToVariableList(holds_succ)
+                        d_current += '_' + str(index_of_phi1)
+                        self.addToVariableList(d_current)
+                        d_succ += '_' + str(index_of_phi1)
+                        self.addToVariableList(d_succ)
+                        prod_left_part *= self.listOfReals[self.list_of_reals.index(prob_succ)]
+
+                        sum_left += prod_left_part
+                        self.no_of_subformula += 1
+
+                        list_of_ors.append(Or(self.listOfBools[self.list_of_bools.index(holds_succ)],
+                                              self.listOfReals[self.list_of_reals.index(d_current)] > self.listOfReals[
+                                                  self.list_of_reals.index(d_succ)]))
+
+                        self.no_of_subformula += 2
+
+                    implies_antecedent_and1 = self.listOfReals[self.list_of_reals.index(prob_phi)] == sum_left
+                    self.no_of_subformula += 1
+                    prod_right_or = Or(list_of_ors)
+                    self.no_of_subformula += 1
+                    implies_antecedent_and2 = Implies(self.listOfReals[self.list_of_reals.index(prob_phi)] > 0,
+                                                      prod_right_or)
+                    self.no_of_subformula += 1
+                    implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
+                    self.no_of_subformula += 1
+                    self.solver.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
+                    self.no_of_subformula += 1
         return relevant_quantifier
