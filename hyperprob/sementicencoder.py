@@ -872,7 +872,7 @@ class SemanticsEncoder:
                     if (ind + 1) in rel_quant2:
                         name2 += "_" + str(r_state[ind])
                     else:
-                        name2 += "_" + str(0)
+                        name2 += "_" + str((0,0))
                 name2 += '_' + str(index_of_phi2)
                 self.addToVariableList(name2)
 
@@ -896,7 +896,7 @@ class SemanticsEncoder:
                 self.list_of_subformula) - 1  # forcefully inserting new replaced formula, will obviously be inserted at the end
             rel_quant = self.encodeBoundedUntilSemantics(hyperproperty)
             relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
-            combined_state_list = self.generateComposedStates(relevant_quantifier)
+            combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             rel_quant1 = int(str(hyperproperty.children[0].children[0].children[1].children[0])[1:])
             rel_quant2 = int(str(hyperproperty.children[0].children[3].children[1].children[0])[1:])
 
@@ -906,7 +906,7 @@ class SemanticsEncoder:
                     if (ind + 1) == rel_quant1:
                         holds1 += "_" + str(r_state[ind])
                     else:
-                        holds1 += "_" + str(0)
+                        holds1 += "_" + str((0,0))
                 holds1 += "_" + str(index_of_phi1)
                 self.addToVariableList(holds1)
                 holds2 = 'holds'
@@ -914,7 +914,7 @@ class SemanticsEncoder:
                     if (ind + 1) == rel_quant2:
                         holds2 += "_" + str(r_state[ind])
                     else:
-                        holds2 += "_" + str(0)
+                        holds2 += "_" + str((0,0))
                 holds2 += "_" + str(index_of_phi2)
                 self.addToVariableList(holds2)
                 prob_phi = 'prob'
@@ -977,7 +977,7 @@ class SemanticsEncoder:
                             sum_left += prod_left_part
                             self.no_of_subformula += 1
 
-                        implies_antecedent_and = self.listOfReals[self.list_of_reals.index(prob_phi)] == prod_left
+                        implies_antecedent_and = self.listOfReals[self.list_of_reals.index(prob_phi)] == sum_left
                         self.no_of_subformula += 1
                         self.solver.add(Implies(implies_precedent, implies_antecedent_and))
                         self.no_of_subformula += 1
@@ -998,7 +998,7 @@ class SemanticsEncoder:
             relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             rel_quant1 = int(str(hyperproperty.children[0].children[0].children[1].children[0])[1:])
-            rel_quant2 = int(str(hyperproperty.children[0].children[3].children[1].children[0])[1:])
+            #rel_quant2 = int(str(hyperproperty.children[0].children[3].children[1].children[0])[1:])
 
             for r_state in combined_state_list:
                 holds1 = 'holds'
@@ -1006,7 +1006,7 @@ class SemanticsEncoder:
                     if (ind + 1) == rel_quant1:
                         holds1 += "_" + str(r_state[ind])
                     else:
-                        holds1 += "_" + str(0)
+                        holds1 += "_" + str((0,0))
                 holds1 += "_" + str(index_of_phi1)
                 self.addToVariableList(holds1)
                 prob_phi = 'prob'
@@ -1040,7 +1040,6 @@ class SemanticsEncoder:
                             act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(name)] == int(ca[l]))
                             act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(stu_name)] == int(h_tuple[l]))
                         implies_precedent = And(self.listOfBools[self.list_of_bools.index(holds1)],
-                                                Not(self.listOfBools[self.list_of_bools.index(holds2)]),
                                                 And(act_stu_str_list))
                         self.no_of_subformula += 2
 
@@ -1066,7 +1065,7 @@ class SemanticsEncoder:
                             sum_left += prod_left_part
                             self.no_of_subformula += 1
 
-                        implies_antecedent_and = self.listOfReals[self.list_of_reals.index(prob_phi)] == prod_left
+                        implies_antecedent_and = self.listOfReals[self.list_of_reals.index(prob_phi)] == sum_left
                         self.no_of_subformula += 1
                         self.solver.add(Implies(implies_precedent, implies_antecedent_and))
                         self.no_of_subformula += 1
