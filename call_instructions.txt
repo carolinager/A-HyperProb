@@ -6,10 +6,24 @@ benchmark/test/mdp_rewards.nm
 -stutterLength
 2
 
+-modelPath
+benchmark/test/mdp_rewards.nm
+-hyperString
+"AS sh . A s1 . A s2 . AT t1 (s2).  ET t2 (s1). ((true & start1(t2)) -> (P (start0(t1) U[2,5] end(t1)) = P (X end(t2))))"
+-stutterLength
+2
+
 Lina:
 -modelPath
 Documents/Research/HyperProbV2/benchmark/test/mdp_rewards.nm
 -hyperString
 "ES sh . A s1 . A s2 . AT t1 (s2).  ET t2 (s1). ((start0(t1) & start1(t2)) -> (P (X end(t1)) = P (X end(t2))))"
+-stutterLength
+2
+
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp_rewards.nm
+-hyperString
+"AS sh . A s1 . A s2 . AT t1 (s2).  ET t2 (s1). ((true & start1(t2)) -> (P (start0(t1) U[2,5] end(t1)) = P (X end(t2))))"
 -stutterLength
 2
