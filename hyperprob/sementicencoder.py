@@ -42,7 +42,7 @@ class SemanticsEncoder:
         if hyperproperty.data == 'true':
             index_of_phi = self.list_of_subformula.index(hyperproperty)
             name = "holds"
-            r_state = [(0, 0) for ind in range(self.no_of_stutter_quantifier)]
+            r_state = [(0, 0) for _ in range(self.no_of_stutter_quantifier)]
             for ind in r_state:
                 name += "_" + str(ind)
             name += '_' + str(index_of_phi)
@@ -68,30 +68,21 @@ class SemanticsEncoder:
             for state in self.model.getListOfStates():
                 if ap_name in labeling.get_labels_of_state(state):
                     list_of_state_with_ap.append(state)
-            combined_state_list = self.generateComposedStates(relevant_quantifier)  # tuples without stutterlength
+            combined_state_list = self.generateComposedStatesWithStutter(
+                relevant_quantifier)  # tuples without stutterlength
             # combined_state_list_with_stutter = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
-                # consider all possible stutterLengths for all states in tuple r_state
-                list_of_r_state_with_all_stutterings = []  # TODO naming
-                # TODO would encoding holds_r-state only for stutterLength 0 suffice ? (i.e. is the following loop necessary
-                for stutter_tuple in itertools.product(range(self.stutterLength), repeat=self.no_of_stutter_quantifier):
-                    name = 'holds'
-                    for index in range(self.no_of_stutter_quantifier):
-                        name += "_(" + str(r_state[index]) + ", " + str(stutter_tuple[index]) + ")"
-                    name += '_' + str(index_of_phi)
-                    self.addToVariableList(name)  # should look like: holds_(0, 0)_(0, 0)_2
-                    list_of_r_state_with_all_stutterings.append(name)
+                name = 'holds'
+                for tup in r_state:
+                    name += '_' + str(tup)
+                name += '_' + str(index_of_phi)
+                self.addToVariableList(name)  # should look like: holds_(0, 0)_(0, 0)_2
 
                 # check whether atomic proposition holds or not
-                if r_state[proposition_relevant_stutter - 1] in list_of_state_with_ap:
-                    # TODO or rather r_state[proposition_relevant_state -1] ??
-                    # i.e., index state tuples by state quantifier or by stutter quantifier?
-                    for name in list_of_r_state_with_all_stutterings:
-                        and_for_yes.add(self.listOfBools[self.list_of_bools.index(name)])
-                    # TODO add list to set more efficiently? use set.update(list) ?
+                if r_state[proposition_relevant_stutter - 1][0] in list_of_state_with_ap:
+                    and_for_yes.add(self.listOfBools[self.list_of_bools.index(name)])
                 else:
-                    for name in list_of_r_state_with_all_stutterings:
-                        and_for_no.add(Not(self.listOfBools[self.list_of_bools.index(name)]))
+                    and_for_no.add(Not(self.listOfBools[self.list_of_bools.index(name)]))
             self.solver.add(And(And([par for par in list(and_for_yes)]), And([par for par in list(and_for_no)])))
             self.no_of_subformula += 3
             and_for_yes.clear()
@@ -107,8 +98,8 @@ class SemanticsEncoder:
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'holds'
-                for ind in r_state:
-                    name1 += "_" + str(ind)
+                for tup in r_state:
+                    name1 += "_" + str(tup)
                 name1 += '_' + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'holds'
@@ -125,7 +116,6 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                        # TODO does this placeholder suffice
                 name3 += '_' + str(index_of_phi2)
                 self.addToVariableList(name3)
                 first_and = And(self.listOfBools[self.list_of_bools.index(name1)],
@@ -149,8 +139,8 @@ class SemanticsEncoder:
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'holds'
-                for ind in r_state:
-                    name1 += "_" + str(ind)
+                for tup in r_state:
+                    name1 += "_" + str(tup)
                 name1 += '_' + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'holds'
@@ -158,7 +148,7 @@ class SemanticsEncoder:
                     if (ind + 1) in rel_quant1:
                         name2 += "_" + str(r_state[ind])
                     else:
-                        name2 += "_" + str(0)
+                        name2 += "_" + str((0, 0))
                 name2 += '_' + str(index_of_phi1)
                 self.addToVariableList(name2)
                 name3 = 'holds'
@@ -166,7 +156,7 @@ class SemanticsEncoder:
                     if (ind + 1) in rel_quant2:
                         name3 += "_" + str(r_state[ind])
                     else:
-                        name3 += "_" + str(0)
+                        name3 += "_" + str((0, 0))
                 name3 += '_' + str(index_of_phi2)
                 self.addToVariableList(name3)
                 first_and = And(self.listOfBools[self.list_of_bools.index(name1)],
@@ -190,8 +180,8 @@ class SemanticsEncoder:
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'holds'
-                for ind in r_state:
-                    name1 += "_" + str(ind)
+                for tup in r_state:
+                    name1 += "_" + str(tup)
                 name1 += '_' + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'holds'
@@ -199,7 +189,7 @@ class SemanticsEncoder:
                     if (ind + 1) in rel_quant1:
                         name2 += "_" + str(r_state[ind])
                     else:
-                        name2 += "_" + str(0)
+                        name2 += "_" + str((0, 0))
                 name2 += '_' + str(index_of_phi1)
                 self.addToVariableList(name2)
                 name3 = 'holds'
@@ -207,7 +197,7 @@ class SemanticsEncoder:
                     if (ind + 1) in rel_quant2:
                         name3 += "_" + str(r_state[ind])
                     else:
-                        name3 += "_" + str(0)
+                        name3 += "_" + str((0, 0))
                 name3 += '_' + str(index_of_phi2)
                 self.addToVariableList(name3)
                 first_and = And(self.listOfBools[self.list_of_bools.index(name1)],
@@ -231,8 +221,8 @@ class SemanticsEncoder:
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'holds'
-                for ind in r_state:
-                    name1 += "_" + str(ind)
+                for tup in r_state:
+                    name1 += "_" + str(tup)
                 name1 += '_' + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'holds'
@@ -240,7 +230,7 @@ class SemanticsEncoder:
                     if (ind + 1) in rel_quant1:
                         name2 += "_" + str(r_state[ind])
                     else:
-                        name2 += "_" + str(0)
+                        name2 += "_" + str((0, 0))
                 name2 += '_' + str(index_of_phi1)
                 self.addToVariableList(name2)
                 name3 = 'holds'
@@ -248,7 +238,7 @@ class SemanticsEncoder:
                     if (ind + 1) in rel_quant2:
                         name3 += "_" + str(r_state[ind])
                     else:
-                        name3 += "_" + str(0)
+                        name3 += "_" + str((0, 0))
                 name3 += '_' + str(index_of_phi2)
                 self.addToVariableList(name3)
                 first_and = And(self.listOfBools[self.list_of_bools.index(name1)],
@@ -277,8 +267,8 @@ class SemanticsEncoder:
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'holds'
-                for ind in r_state:
-                    name1 += "_" + str(ind)
+                for tup in r_state:
+                    name1 += "_" + str(tup)
                 name1 += '_' + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'holds'
@@ -324,24 +314,24 @@ class SemanticsEncoder:
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'holds'
-                for ind in r_state:
-                    name1 += "_" + str(ind)
+                for tup in r_state:
+                    name1 += "_" + str(tup)
                 name1 += '_' + str(index_of_phi)
                 self.addToVariableList(name1)
-                name2 = 'holds'
+                name2 = 'prob'
                 for ind in range(0, len(r_state)):
                     if (ind + 1) in rel_quant1:
                         name2 += "_" + str(r_state[ind])
                     else:
-                        name2 += "_" + str(0)
+                        name2 += "_" + str((0, 0))
                 name2 += '_' + str(index_of_phi1)
                 self.addToVariableList(name2)
-                name3 = 'holds'
+                name3 = 'prob'
                 for ind in range(0, len(r_state)):
                     if (ind + 1) in rel_quant2:
                         name3 += "_" + str(r_state[ind])
                     else:
-                        name3 += "_" + str(0)
+                        name3 += "_" + str((0, 0))
                 name3 += '_' + str(index_of_phi2)
                 self.addToVariableList(name3)
                 and_eq = And(self.listOfBools[self.list_of_bools.index(name1)],
@@ -365,24 +355,24 @@ class SemanticsEncoder:
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'holds'
-                for ind in r_state:
-                    name1 += "_" + str(ind)
+                for tup in r_state:
+                    name1 += "_" + str(tup)
                 name1 += '_' + str(index_of_phi)
                 self.addToVariableList(name1)
-                name2 = 'holds'
+                name2 = 'prob'
                 for ind in range(0, len(r_state)):
                     if (ind + 1) in rel_quant1:
                         name2 += "_" + str(r_state[ind])
                     else:
-                        name2 += "_" + str(0)
+                        name2 += "_" + str((0, 0))
                 name2 += '_' + str(index_of_phi1)
                 self.addToVariableList(name2)
-                name3 = 'holds'
+                name3 = 'prob'
                 for ind in range(0, len(r_state)):
                     if (ind + 1) in rel_quant2:
                         name3 += "_" + str(r_state[ind])
                     else:
-                        name3 += "_" + str(0)
+                        name3 += "_" + str((0, 0))
                 name3 += '_' + str(index_of_phi2)
                 self.addToVariableList(name3)
                 and_eq = And(self.listOfBools[self.list_of_bools.index(name1)],
@@ -406,24 +396,24 @@ class SemanticsEncoder:
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'holds'
-                for ind in r_state:
-                    name1 += "_" + str(ind)
+                for tup in r_state:
+                    name1 += "_" + str(tup)
                 name1 += '_' + str(index_of_phi)
                 self.addToVariableList(name1)
-                name2 = 'holds'
+                name2 = 'prob'
                 for ind in range(0, len(r_state)):
                     if (ind + 1) in rel_quant1:
                         name2 += "_" + str(r_state[ind])
                     else:
-                        name2 += "_" + str(0)
+                        name2 += "_" + str((0, 0))
                 name2 += '_' + str(index_of_phi1)
                 self.addToVariableList(name2)
-                name3 = 'holds'
+                name3 = 'prob'
                 for ind in range(0, len(r_state)):
                     if (ind + 1) in rel_quant2:
                         name3 += "_" + str(r_state[ind])
                     else:
-                        name3 += "_" + str(0)
+                        name3 += "_" + str((0, 0))
                 name3 += '_' + str(index_of_phi2)
                 self.addToVariableList(name3)
                 and_eq = And(self.listOfBools[self.list_of_bools.index(name1)],
@@ -447,24 +437,24 @@ class SemanticsEncoder:
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'holds'
-                for ind in r_state:
-                    name1 += "_" + str(ind)
+                for tup in r_state:
+                    name1 += "_" + str(tup)
                 name1 += '_' + str(index_of_phi)
                 self.addToVariableList(name1)
-                name2 = 'holds'
+                name2 = 'prob'
                 for ind in range(0, len(r_state)):
                     if (ind + 1) in rel_quant1:
                         name2 += "_" + str(r_state[ind])
                     else:
-                        name2 += "_" + str(0)
+                        name2 += "_" + str((0, 0))
                 name2 += '_' + str(index_of_phi1)
                 self.addToVariableList(name2)
-                name3 = 'holds'
+                name3 = 'prob'
                 for ind in range(0, len(r_state)):
                     if (ind + 1) in rel_quant2:
                         name3 += "_" + str(r_state[ind])
                     else:
-                        name3 += "_" + str(0)
+                        name3 += "_" + str((0, 0))
                 name3 += '_' + str(index_of_phi2)
                 self.addToVariableList(name3)
                 and_eq = And(self.listOfBools[self.list_of_bools.index(name1)],
@@ -488,24 +478,24 @@ class SemanticsEncoder:
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'holds'
-                for ind in r_state:
-                    name1 += "_" + str(ind)
+                for tup in r_state:
+                    name1 += "_" + str(tup)
                 name1 += '_' + str(index_of_phi)
                 self.addToVariableList(name1)
-                name2 = 'holds'
+                name2 = 'prob'
                 for ind in range(0, len(r_state)):
                     if (ind + 1) in rel_quant1:
                         name2 += "_" + str(r_state[ind])
                     else:
-                        name2 += "_" + str(0)
+                        name2 += "_" + str((0, 0))
                 name2 += '_' + str(index_of_phi1)
                 self.addToVariableList(name2)
-                name3 = 'holds'
+                name3 = 'prob'
                 for ind in range(0, len(r_state)):
                     if (ind + 1) in rel_quant2:
                         name3 += "_" + str(r_state[ind])
                     else:
-                        name3 += "_" + str(0)
+                        name3 += "_" + str((0, 0))
                 name3 += '_' + str(index_of_phi2)
                 self.addToVariableList(name3)
                 and_eq = And(self.listOfBools[self.list_of_bools.index(name1)],
@@ -524,9 +514,8 @@ class SemanticsEncoder:
             index_of_phi = self.list_of_subformula.index(hyperproperty)
             name = "prob"
             r_state = [(0, 0) for _ in range(self.no_of_stutter_quantifier)]
-            # TODO does this suffice or do we need to encode all possible stutterings
-            for ind in r_state:
-                name += "_" + str(ind)
+            for tup in r_state:
+                name += "_" + str(tup)
             name += '_' + str(index_of_phi)
             self.addToVariableList(name)
             self.solver.add(self.listOfReals[self.list_of_reals.index(name)] == constant)
@@ -543,8 +532,8 @@ class SemanticsEncoder:
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             for r_state in combined_state_list:
                 name1 = 'prob'
-                for ind in r_state:
-                    name1 += "_" + str(ind)
+                for tup in r_state:
+                    name1 += "_" + str(tup)
                 name1 += '_' + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'prob'
@@ -552,7 +541,7 @@ class SemanticsEncoder:
                     if (ind + 1) in rel_quant1:
                         name2 += "_" + str(r_state[ind])
                     else:
-                        name2 += "_" + str(0)
+                        name2 += "_" + str((0, 0))
                 name2 += '_' + str(index_left)
                 self.addToVariableList(name2)
                 name3 = 'prob'
@@ -560,7 +549,7 @@ class SemanticsEncoder:
                     if (ind + 1) in rel_quant2:
                         name3 += "_" + str(r_state[ind])
                     else:
-                        name3 += "_" + str(0)
+                        name3 += "_" + str((0, 0))
                 name3 += '_' + str(index_right)
                 self.addToVariableList(name3)
                 if hyperproperty.data == 'add_probability':
@@ -639,8 +628,8 @@ class SemanticsEncoder:
         for r_state in combined_state_list:
             holds1 = 'holds'
             str_r_state = ""
-            for ind in r_state:
-                str_r_state += "_" + str(ind)
+            for tup in r_state:
+                str_r_state += "_" + str(tup)
             holds1 += str_r_state + "_" + str(index_of_phi1)
             self.addToVariableList(holds1)
             holdsToInt1 = 'holdsToInt' + str_r_state + "_" + str(index_of_phi1)
@@ -663,7 +652,6 @@ class SemanticsEncoder:
             combined_acts = list(itertools.product(*dicts_act))
             combined_stutters = list(itertools.product(*dicts_stutter))
 
-
             for ca in combined_acts:
                 for h_tuple in combined_stutters:
                     act_stu_str_list = []
@@ -676,7 +664,6 @@ class SemanticsEncoder:
                         act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(name)] == int(ca[l]))
                         act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(stu_name)] == int(h_tuple[l]))
                     implies_precedent = And(act_stu_str_list)
-                    print(self.solver.check())
                     self.no_of_subformula += 1
 
                     combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
@@ -704,21 +691,22 @@ class SemanticsEncoder:
                     self.no_of_subformula += 1
                     self.solver.add(Implies(implies_precedent, implies_antecedent_and))
                     self.no_of_subformula += 1
+
         return relevant_quantifier
 
     def genSuccessors(self, r_state, ca, h_tuple, relevant_quantifier):
         dicts = []
-        for l in relevant_quantifier:
-            if h_tuple[l - 1] == r_state[l - 1][1]:
+        for l in range(len(relevant_quantifier)):
+            if h_tuple[l] == r_state[l][1]:
                 succ = (
-                self.model.dict_of_acts_tran[str(r_state[l - 1][0]) + " " + str(ca[relevant_quantifier.index(l)])])
+                    self.model.dict_of_acts_tran[str(r_state[l][0]) + " " + str(ca[l])])
                 list_of_all_succ = []
                 for s in succ:
                     space = s.find(' ')
                     succ_state = (int(s[0:space]), 0)
                     list_of_all_succ.append([str(succ_state), s[space + 1:]])
             else:
-                list_of_all_succ = [[str((r_state[l - 1][0], r_state[l - 1][1] + 1)), str(1)]]
+                list_of_all_succ = [[str((r_state[l][0], r_state[l][1] + 1)), str(1)]]
             dicts.append(list_of_all_succ)
         return list(itertools.product(*dicts))
 
@@ -740,7 +728,7 @@ class SemanticsEncoder:
                 if (ind + 1) in rel_quant1:
                     holds1 += "_" + str(r_state[ind])
                 else:
-                    holds1 += "_" + str(0)
+                    holds1 += "_" + str((0, 0))
             holds1 += "_" + str(index_of_phi1)
             self.addToVariableList(holds1)
             holds2 = 'holds'
@@ -748,12 +736,12 @@ class SemanticsEncoder:
                 if (ind + 1) in rel_quant2:
                     holds2 += "_" + str(r_state[ind])
                 else:
-                    holds2 += "_" + str(0)
+                    holds2 += "_" + str((0, 0))
             holds2 += "_" + str(index_of_phi2)
             self.addToVariableList(holds2)
             prob_phi = 'prob'
-            for ind in r_state:
-                prob_phi += "_" + str(ind)
+            for tup in r_state:
+                prob_phi += "_" + str(tup)
             prob_phi += '_' + str(index_of_phi)
             self.addToVariableList(prob_phi)
             new_prob_const = self.listOfReals[self.list_of_reals.index(prob_phi)] >= float(0)
@@ -784,7 +772,9 @@ class SemanticsEncoder:
                         self.addToVariableList(stu_name)
                         act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(name)] == int(ca[l]))
                         act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(stu_name)] == int(h_tuple[l]))
-                    implies_precedent = And(self.listOfBools[self.list_of_bools.index(holds1)], Not(self.listOfBools[self.list_of_bools.index(holds2)]), And(act_stu_str_list))
+                    implies_precedent = And(self.listOfBools[self.list_of_bools.index(holds1)],
+                                            Not(self.listOfBools[self.list_of_bools.index(holds2)]),
+                                            And(act_stu_str_list))
                     self.no_of_subformula += 2
 
                     combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
@@ -845,6 +835,7 @@ class SemanticsEncoder:
         return relevant_quantifier
 
     def encodeBoundedUntilSemantics(self, hyperproperty, relevant_quantifier=[]):
+        # TODO: change to return rel_quant1, rel_quant2 in both the other two cases.
         k1 = int(hyperproperty.children[0].children[1].value)
         k2 = int(hyperproperty.children[0].children[2].value)
 
@@ -863,8 +854,8 @@ class SemanticsEncoder:
 
             for r_state in combined_state_list:
                 name1 = 'prob'
-                for ind in r_state:
-                    name1 += "_" + str(ind)
+                for tup in r_state:
+                    name1 += "_" + str(tup)
                 name1 += '_' + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'holds'
@@ -872,7 +863,7 @@ class SemanticsEncoder:
                     if (ind + 1) in rel_quant2:
                         name2 += "_" + str(r_state[ind])
                     else:
-                        name2 += "_" + str((0,0))
+                        name2 += "_" + str((0, 0))
                 name2 += '_' + str(index_of_phi2)
                 self.addToVariableList(name2)
 
@@ -906,7 +897,7 @@ class SemanticsEncoder:
                     if (ind + 1) == rel_quant1:
                         holds1 += "_" + str(r_state[ind])
                     else:
-                        holds1 += "_" + str((0,0))
+                        holds1 += "_" + str((0, 0))
                 holds1 += "_" + str(index_of_phi1)
                 self.addToVariableList(holds1)
                 holds2 = 'holds'
@@ -914,12 +905,12 @@ class SemanticsEncoder:
                     if (ind + 1) == rel_quant2:
                         holds2 += "_" + str(r_state[ind])
                     else:
-                        holds2 += "_" + str((0,0))
+                        holds2 += "_" + str((0, 0))
                 holds2 += "_" + str(index_of_phi2)
                 self.addToVariableList(holds2)
                 prob_phi = 'prob'
-                for ind in r_state:
-                    prob_phi += "_" + str(ind)
+                for tup in r_state:
+                    prob_phi += "_" + str(tup)
                 prob_phi += '_' + str(index_of_phi)
                 self.addToVariableList(prob_phi)
 
@@ -951,9 +942,11 @@ class SemanticsEncoder:
                                 r_state[relevant_quantifier[l] - 1][0])
                             self.addToVariableList(stu_name)
                             act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(name)] == int(ca[l]))
-                            act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(stu_name)] == int(h_tuple[l]))
+                            act_stu_str_list.append(
+                                self.listOfInts[self.list_of_ints.index(stu_name)] == int(h_tuple[l]))
                         implies_precedent = And(self.listOfBools[self.list_of_bools.index(holds1)],
-                                                Not(self.listOfBools[self.list_of_bools.index(holds2)]), And(act_stu_str_list))
+                                                Not(self.listOfBools[self.list_of_bools.index(holds2)]),
+                                                And(act_stu_str_list))
                         self.no_of_subformula += 2
 
                         combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
@@ -998,7 +991,7 @@ class SemanticsEncoder:
             relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             rel_quant1 = int(str(hyperproperty.children[0].children[0].children[1].children[0])[1:])
-            #rel_quant2 = int(str(hyperproperty.children[0].children[3].children[1].children[0])[1:])
+            # rel_quant2 = int(str(hyperproperty.children[0].children[3].children[1].children[0])[1:])
 
             for r_state in combined_state_list:
                 holds1 = 'holds'
@@ -1006,12 +999,12 @@ class SemanticsEncoder:
                     if (ind + 1) == rel_quant1:
                         holds1 += "_" + str(r_state[ind])
                     else:
-                        holds1 += "_" + str((0,0))
+                        holds1 += "_" + str((0, 0))
                 holds1 += "_" + str(index_of_phi1)
                 self.addToVariableList(holds1)
                 prob_phi = 'prob'
-                for ind in r_state:
-                    prob_phi += "_" + str(ind)
+                for tup in r_state:
+                    prob_phi += "_" + str(tup)
                 prob_phi += '_' + str(index_of_phi)
                 self.addToVariableList(prob_phi)
 
@@ -1038,7 +1031,8 @@ class SemanticsEncoder:
                                 r_state[relevant_quantifier[l] - 1][0])
                             self.addToVariableList(stu_name)
                             act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(name)] == int(ca[l]))
-                            act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(stu_name)] == int(h_tuple[l]))
+                            act_stu_str_list.append(
+                                self.listOfInts[self.list_of_ints.index(stu_name)] == int(h_tuple[l]))
                         implies_precedent = And(self.listOfBools[self.list_of_bools.index(holds1)],
                                                 And(act_stu_str_list))
                         self.no_of_subformula += 2
@@ -1053,7 +1047,7 @@ class SemanticsEncoder:
                                 if l in relevant_quantifier:
                                     succ_state = cs[relevant_quantifier.index(l)][0]
                                     prob_succ += '_' + succ_state
-                                    prod_left_part *= RealVal(cs[f][space + 1:]).as_fraction()
+                                    prod_left_part *= RealVal(cs[relevant_quantifier.index(l)][1]).as_fraction()
                                 else:
                                     prob_succ += '_' + str((0, 0))
 
@@ -1115,7 +1109,8 @@ class SemanticsEncoder:
                         self.addToVariableList(stu_name)
                         act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(name)] == int(ca[l]))
                         act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(stu_name)] == int(h_tuple[l]))
-                    implies_precedent = And(Not(self.listOfBools[self.list_of_bools.index(holds1)]), And(act_stu_str_list))
+                    implies_precedent = And(Not(self.listOfBools[self.list_of_bools.index(holds1)]),
+                                            And(act_stu_str_list))
                     self.no_of_subformula += 2
 
                     combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
@@ -1136,9 +1131,9 @@ class SemanticsEncoder:
                                 d_succ += '_' + succ_state
                                 prod_left_part *= RealVal(cs[relevant_quantifier.index(l)][1]).as_fraction()
                             else:
-                                prob_succ += '_' + str((0,0))
-                                holds_succ += '_' + str((0,0))
-                                d_succ += '_' + str((0,0))
+                                prob_succ += '_' + str((0, 0))
+                                holds_succ += '_' + str((0, 0))
+                                d_succ += '_' + str((0, 0))
                             d_current += '_' + str(r_state[l - 1])
 
                         prob_succ += '_' + str(index_of_phi)
@@ -1172,3 +1167,4 @@ class SemanticsEncoder:
                     self.solver.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
                     self.no_of_subformula += 1
         return relevant_quantifier
+

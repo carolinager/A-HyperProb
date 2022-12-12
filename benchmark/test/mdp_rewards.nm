@@ -24,7 +24,8 @@ label "hle0" = (s=0)&(f=1);
 label "le1"  = (s=1);
 label "le2"  = (s=2);
 label "end"  = (s=1)|(s=2);
-label "start0" = s=0;
+label "start0" = (s=0)&(f=0);
+label "start1" = (s=0)&(f=1);
 
 rewards
     (s=0)&(f=0) : 3;
