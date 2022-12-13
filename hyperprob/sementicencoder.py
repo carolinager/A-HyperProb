@@ -293,7 +293,7 @@ class SemanticsEncoder:
             elif child.data == 'until_bounded':
                 relevant_quantifier = extendWithoutDuplicates(relevant_quantifier,
                                                               self.encodeBoundedUntilSemantics(hyperproperty,
-                                                                                               relevant_quantifier))
+                                                                                               relevant_quantifier)[0])
             elif child.data == 'future':
                 relevant_quantifier = extendWithoutDuplicates(relevant_quantifier,
                                                               self.encodeFutureSemantics(hyperproperty,
@@ -835,7 +835,6 @@ class SemanticsEncoder:
         return relevant_quantifier
 
     def encodeBoundedUntilSemantics(self, hyperproperty, relevant_quantifier=[]):
-        # TODO: change to return rel_quant1, rel_quant2 in both the other two cases.
         k1 = int(hyperproperty.children[0].children[1].value)
         k2 = int(hyperproperty.children[0].children[2].value)
 
@@ -885,16 +884,17 @@ class SemanticsEncoder:
             self.list_of_subformula.append(hyperproperty)
             index_of_replaced = len(
                 self.list_of_subformula) - 1  # forcefully inserting new replaced formula, will obviously be inserted at the end
-            rel_quant = self.encodeBoundedUntilSemantics(hyperproperty)
+            rel_quant, rel_quant1, rel_quant2 = self.encodeBoundedUntilSemantics(hyperproperty)
             relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
+            # TODO isnt it unnecessary to add them again since we already added the quantifiers in the base case
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
-            rel_quant1 = int(str(hyperproperty.children[0].children[0].children[1].children[0])[1:])
-            rel_quant2 = int(str(hyperproperty.children[0].children[3].children[1].children[0])[1:])
+            # rel_quant1 = int(str(hyperproperty.children[0].children[0].children[1].children[0])[1:])
+            # rel_quant2 = int(str(hyperproperty.children[0].children[3].children[1].children[0])[1:])
 
             for r_state in combined_state_list:
                 holds1 = 'holds'
                 for ind in range(0, len(r_state)):
-                    if (ind + 1) == rel_quant1:
+                    if (ind + 1) in rel_quant1:
                         holds1 += "_" + str(r_state[ind])
                     else:
                         holds1 += "_" + str((0, 0))
@@ -902,7 +902,7 @@ class SemanticsEncoder:
                 self.addToVariableList(holds1)
                 holds2 = 'holds'
                 for ind in range(0, len(r_state)):
-                    if (ind + 1) == rel_quant2:
+                    if (ind + 1) in rel_quant2:
                         holds2 += "_" + str(r_state[ind])
                     else:
                         holds2 += "_" + str((0, 0))
@@ -987,10 +987,10 @@ class SemanticsEncoder:
             self.list_of_subformula.append(hyperproperty)
             index_of_replaced = len(
                 self.list_of_subformula) - 1  # forcefully inserting new replaced formula, will obviously be inserted at the end
-            rel_quant = self.encodeBoundedUntilSemantics(hyperproperty)
+            rel_quant, rel_quant1, rel_quant2 = self.encodeBoundedUntilSemantics(hyperproperty)
             relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
-            rel_quant1 = int(str(hyperproperty.children[0].children[0].children[1].children[0])[1:])
+            # rel_quant1 = int(str(hyperproperty.children[0].children[0].children[1].children[0])[1:])
             # rel_quant2 = int(str(hyperproperty.children[0].children[3].children[1].children[0])[1:])
 
             for r_state in combined_state_list:
@@ -1063,7 +1063,7 @@ class SemanticsEncoder:
                         self.no_of_subformula += 1
                         self.solver.add(Implies(implies_precedent, implies_antecedent_and))
                         self.no_of_subformula += 1
-        return relevant_quantifier
+        return relevant_quantifier, rel_quant1, rel_quant2
 
     def encodeFutureSemantics(self, hyperproperty, relevant_quantifier=[]):
         phi1 = hyperproperty.children[0].children[0]
