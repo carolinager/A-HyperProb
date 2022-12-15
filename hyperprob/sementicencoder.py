@@ -1168,3 +1168,128 @@ class SemanticsEncoder:
                     self.no_of_subformula += 1
         return relevant_quantifier
 
+    def encodeGlobalSemantics(self, hyperproperty, relevant_quantifier=[]):
+        # TODO explicit encoding vs via Future or Until
+        #### encoding via Future doesnt work since our syntax doesnt allow P(-G phi) ?
+        # temp_prop = copy.deepcopy(hyperproperty)
+        # inner = hyperproperty.children[0].children[0]
+        # transformed_temporal = Tree('not', [Tree('future', [Tree('not', [inner])])])
+        # temp_prop.children[0] = transformed_temporal
+        # relevant_quantifier = extendWithoutDuplicates(relevant_quantifier,
+        #                                               self.encodeFutureSemantics(temp_prop, relevant_quantifier))
+
+        # TODO via Until: have to transform formula already in modelCheck() st the subformula list works correctly?!
+        # temp_prop = copy.deepcopy(hyperproperty)
+        # inner = hyperproperty.children[0].children[0]
+        # transformed_temporal = Tree('until_unbounded', [inner, Tree('not', [Tree('true', [])])])
+        # temp_prop.children[0] = transformed_temporal
+        # relevant_quantifier = extendWithoutDuplicates(relevant_quantifier,
+        #                                               self.encodeUnboundedUntilSemantics(temp_prop,
+        #                                                                                  relevant_quantifier))
+
+        # TODO encoding explicitly may also not work because the loop condition doesnt work?
+        index_of_phi = self.list_of_subformula.index(hyperproperty)
+        phi1 = hyperproperty.children[0].children[0]
+        index_of_phi1 = self.list_of_subformula.index(phi1)
+        rel_quant1 = self.encodeSemantics(phi1)
+        relevant_quantifier = extendWithoutDuplicates(rel_quant1, relevant_quantifier)
+        combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
+
+        for r_state in combined_state_list:
+            holds1 = 'holds'
+            str_r_state = ""
+            for tup in r_state:
+                str_r_state += "_" + str(tup)
+            holds1 += str_r_state + "_" + str(index_of_phi1)
+            self.addToVariableList(holds1)
+            prob_phi = 'prob'
+            prob_phi += str_r_state + '_' + str(index_of_phi)
+            self.addToVariableList(prob_phi)
+            new_prob_const_0 = self.listOfReals[self.list_of_reals.index(prob_phi)] >= float(0)
+            new_prob_const_1 = self.listOfReals[self.list_of_reals.index(prob_phi)] <= float(1)
+            first_implies = And(Implies((Not(self.listOfBools[self.list_of_bools.index(holds1)])),
+                                        (self.listOfReals[self.list_of_reals.index(prob_phi)] == float(0))),
+                                new_prob_const_0,
+                                new_prob_const_1)
+            self.no_of_subformula += 1
+
+            dicts_act = []
+            dicts_stutter = []
+            for l in relevant_quantifier:
+                dicts_act.append(self.model.dict_of_acts[r_state[l - 1][0]])
+                dicts_stutter.append(list(range(self.stutterLength)))
+            combined_acts = list(itertools.product(*dicts_act))
+            combined_stutters = list(itertools.product(*dicts_stutter))
+
+            for ca in combined_acts:
+                for h_tuple in combined_stutters:
+                    act_stu_str_list = []
+                    for l in range(len(relevant_quantifier)):
+                        name = 'a_' + str(r_state[relevant_quantifier[l] - 1][0])
+                        self.addToVariableList(name)
+                        stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
+                            r_state[relevant_quantifier[l] - 1][0])
+                        self.addToVariableList(stu_name)
+                        act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(name)] == int(ca[l]))
+                        act_stu_str_list.append(self.listOfInts[self.list_of_ints.index(stu_name)] == int(h_tuple[l]))
+                    implies_precedent = And(self.listOfBools[self.list_of_bools.index(holds1)],
+                                            And(act_stu_str_list))
+                    self.no_of_subformula += 2
+
+                    combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
+                    sum_left = RealVal(0).as_fraction()
+                    # list_of_ors = []
+
+                    for cs in combined_succ:
+                        prob_succ = 'prob'
+                        holds_succ = 'holds'
+                        # d_current = 'd'
+                        # d_succ = 'd'
+                        prod_left_part = RealVal(1).as_fraction()
+                        for l in range(1, self.no_of_state_quantifier + 1):
+                            if l in relevant_quantifier:
+                                succ_state = cs[relevant_quantifier.index(l)][0]
+                                prob_succ += '_' + succ_state
+                                holds_succ += '_' + succ_state
+                                # d_succ += '_' + succ_state
+                                prod_left_part *= RealVal(cs[relevant_quantifier.index(l)][1]).as_fraction()
+                            else:
+                                prob_succ += '_' + str((0, 0))
+                                holds_succ += '_' + str((0, 0))
+                                # d_succ += '_' + str((0, 0))
+                            # d_current += '_' + str(r_state[l - 1])
+
+                        prob_succ += '_' + str(index_of_phi)
+                        self.addToVariableList(prob_succ)
+
+                        prod_left_part *= self.listOfReals[self.list_of_reals.index(prob_succ)]
+                        sum_left += prod_left_part
+                        self.no_of_subformula += 1
+
+                        # TODO how to handle loop condition for Globally, it never ends...
+                        # holds_succ += '_' + str(index_of_phi2)
+                        # self.addToVariableList(holds_succ)
+                        # d_current += '_' + str(index_of_phi2)
+                        # self.addToVariableList(d_current)
+                        # d_succ += '_' + str(index_of_phi2)
+                        # self.addToVariableList(d_succ)
+                        #
+                        # list_of_ors.append(Or(self.listOfBools[self.list_of_bools.index(holds_succ)],
+                        #                       self.listOfReals[self.list_of_reals.index(d_current)] > self.listOfReals[
+                        #                           self.list_of_reals.index(d_succ)]))
+                        #
+                        # self.no_of_subformula += 2
+
+                    implies_antecedent_and1 = self.listOfReals[self.list_of_reals.index(prob_phi)] == sum_left
+                    self.no_of_subformula += 1
+                    # prod_right_or = Or(list_of_ors)
+                    # self.no_of_subformula += 1
+                    # implies_antecedent_and2 = Implies(self.listOfReals[self.list_of_reals.index(prob_phi)] > 0,
+                    #                                  prod_right_or)
+                    # self.no_of_subformula += 1
+                    implies_antecedent = implies_antecedent_and1 # And(implies_antecedent_and1, implies_antecedent_and2)
+                    # self.no_of_subformula += 1
+                    self.solver.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
+                    self.no_of_subformula += 1
+
+        return relevant_quantifier
