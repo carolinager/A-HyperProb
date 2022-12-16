@@ -13,6 +13,21 @@ benchmark/test/mdp_rewards.nm
 -stutterLength
 2
 
+-modelPath
+benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . AT t1 (s1). (P (X (1 = P (G le1(t1))) )=0.5)"
+-stutterLength
+1
+
+-modelPath
+benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . AT t1 (s1). (P (X (1 = 1 - P (F ~(le1(t1))) ))=0.5)"-stutterLength
+1
+
+
+
 Lina:
 -modelPath
 Documents/Research/HyperProbV2/benchmark/test/mdp_rewards.nm
@@ -27,3 +42,18 @@ Documents/Research/HyperProbV2/benchmark/test/mdp_rewards.nm
 "AS sh . A s1 . A s2 . AT t1 (s2).  ET t2 (s1). ((true & start1(t2)) -> (P (start0(t1) U[2,5] end(t1)) = P (X end(t2))))"
 -stutterLength
 2
+
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . AT t1 (s1). (P (X (1 = P (G le1(t1))) )=1)"
+-stutterLength
+2
+
+
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . AT t1 (s1). (P (X (1 = 1 - P (F ~(le1(t1))) ))=0.5)"
+-stutterLength
+1
