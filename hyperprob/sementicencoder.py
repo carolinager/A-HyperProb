@@ -1169,35 +1169,6 @@ class SemanticsEncoder:
         return relevant_quantifier
 
     def encodeGlobalSemantics(self, hyperproperty, relevant_quantifier=[]):
-        # TODO encoding P(G phi) as 1-P(F ~phi) -- have to do this already in modelCheck st we can add the subformulas to subformulaList?
-        # prop_copy = copy.deepcopy(hyperproperty)
-        # inner = hyperproperty.children[0].children[0]
-        # transformed_temporal = Tree('future', [Tree('not', [inner])])
-        # prop_copy.children[0] = transformed_temporal
-        # transformed_prop = Tree('subtract_probability', [Tree('constant_probability', [Token('NUM', '1')]),
-        #                                                  prop_copy])
-        # # todo add to subformula list but thats not possible here?
-        # relevant_quantifier = extendWithoutDuplicates(relevant_quantifier,
-        #                                               self.encodeFutureSemantics(transformed_prop, relevant_quantifier))
-
-        # TODO explicit encoding vs via Future doesnt work since our syntax doesnt allow P(-G phi) ?
-        # temp_prop = copy.deepcopy(hyperproperty)
-        # inner = hyperproperty.children[0].children[0]
-        # transformed_temporal = Tree('not', [Tree('future', [Tree('not', [inner])])])
-        # temp_prop.children[0] = transformed_temporal
-        # relevant_quantifier = extendWithoutDuplicates(relevant_quantifier,
-        #                                               self.encodeFutureSemantics(temp_prop, relevant_quantifier))
-
-        # TODO via Until: loop condition doesnt work ?
-        # temp_prop = copy.deepcopy(hyperproperty)
-        # inner = hyperproperty.children[0].children[0]
-        # transformed_temporal = Tree('until_unbounded', [inner, Tree('not', [Tree('true', [])])])
-        # temp_prop.children[0] = transformed_temporal
-        # relevant_quantifier = extendWithoutDuplicates(relevant_quantifier,
-        #                                               self.encodeUnboundedUntilSemantics(temp_prop,
-        #                                                                                  relevant_quantifier))
-
-        # TODO encoding explicitly also does not work because we cannot use the loop condition, but we still need to find the greatest fixpoint
         index_of_phi = self.list_of_subformula.index(hyperproperty)
         phi1 = hyperproperty.children[0].children[0]
         index_of_phi1 = self.list_of_subformula.index(phi1)
