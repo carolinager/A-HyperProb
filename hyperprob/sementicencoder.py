@@ -917,15 +917,16 @@ class SemanticsEncoder:
                 prob_phi += '_' + str(index_of_phi)
                 self.addToVariableList(prob_phi)
 
-                new_prob_const = self.listOfReals[self.list_of_reals.index(prob_phi)] >= float(0)
-                # todo also require <= 1 ?
+                new_prob_const_0 = self.listOfReals[self.list_of_reals.index(prob_phi)] >= float(0)
+                new_prob_const_1 = self.listOfReals[self.list_of_reals.index(prob_phi)] <= float(1)
                 first_implies = And(Implies(self.listOfBools[self.list_of_bools.index(holds2)],
                                             (self.listOfReals[self.list_of_reals.index(prob_phi)] == float(1))),
                                     Implies(And(Not(self.listOfBools[self.list_of_bools.index(holds1)]),
                                                 Not(self.listOfBools[self.list_of_bools.index(holds2)])),
                                             (self.listOfReals[self.list_of_reals.index(prob_phi)] == float(0))),
-                                    new_prob_const)
-                self.no_of_subformula += 3
+                                    new_prob_const_0,
+                                    new_prob_const_1)
+                self.no_of_subformula += 4
                 self.solver.add(first_implies)
 
                 dicts_act = []
@@ -1012,10 +1013,13 @@ class SemanticsEncoder:
                 prob_phi += '_' + str(index_of_phi)
                 self.addToVariableList(prob_phi)
 
-                # todo also require >=0 and <=1 ?
-                first_implies = Implies(Not(self.listOfBools[self.list_of_bools.index(holds1)]),
-                                        (self.listOfReals[self.list_of_reals.index(prob_phi)] == float(0)))
-                self.no_of_subformula += 1
+                new_prob_const_0 = self.listOfReals[self.list_of_reals.index(prob_phi)] >= float(0)
+                new_prob_const_1 = self.listOfReals[self.list_of_reals.index(prob_phi)] <= float(1)
+                first_implies = And(Implies(Not(self.listOfBools[self.list_of_bools.index(holds1)]),
+                                        (self.listOfReals[self.list_of_reals.index(prob_phi)] == float(0))),
+                                    new_prob_const_0,
+                                    new_prob_const_1)
+                self.no_of_subformula += 3
                 self.solver.add(first_implies)
 
                 dicts_act = []
