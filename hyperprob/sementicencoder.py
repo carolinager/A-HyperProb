@@ -830,6 +830,7 @@ class SemanticsEncoder:
                     implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
                     self.no_of_subformula += 1
                     self.solver.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
+                    # TODO isnt it redundant to add first_implies here ? only needs to be added once for each state, not for each action
                     self.no_of_subformula += 1
 
         return relevant_quantifier
@@ -1192,6 +1193,7 @@ class SemanticsEncoder:
                                         (self.listOfReals[self.list_of_reals.index(prob_phi)] == float(0))),
                                 new_prob_const_0,
                                 new_prob_const_1)
+            self.solver.add(first_implies)
             self.no_of_subformula += 1
 
             dicts_act = []
@@ -1219,26 +1221,26 @@ class SemanticsEncoder:
 
                     combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
                     sum_left = RealVal(0).as_fraction()
-                    # list_of_ors = []
+                    list_of_ors = []
 
                     for cs in combined_succ:
                         prob_succ = 'prob'
                         holds_succ = 'holds'
-                        # d_current = 'd'
-                        # d_succ = 'd'
+                        d_current = 'd'
+                        d_succ = 'd'
                         prod_left_part = RealVal(1).as_fraction()
                         for l in range(1, self.no_of_state_quantifier + 1):
                             if l in relevant_quantifier:
                                 succ_state = cs[relevant_quantifier.index(l)][0]
                                 prob_succ += '_' + succ_state
                                 holds_succ += '_' + succ_state
-                                # d_succ += '_' + succ_state
+                                d_succ += '_' + succ_state
                                 prod_left_part *= RealVal(cs[relevant_quantifier.index(l)][1]).as_fraction()
                             else:
                                 prob_succ += '_' + str((0, 0))
                                 holds_succ += '_' + str((0, 0))
-                                # d_succ += '_' + str((0, 0))
-                            # d_current += '_' + str(r_state[l - 1])
+                                d_succ += '_' + str((0, 0))
+                            d_current += '_' + str(r_state[l - 1])
 
                         prob_succ += '_' + str(index_of_phi)
                         self.addToVariableList(prob_succ)
@@ -1247,30 +1249,31 @@ class SemanticsEncoder:
                         sum_left += prod_left_part
                         self.no_of_subformula += 1
 
-                        # TODO how to handle loop condition for Globally, it never ends...
-                        # holds_succ += '_' + str(index_of_phi2)
-                        # self.addToVariableList(holds_succ)
-                        # d_current += '_' + str(index_of_phi2)
-                        # self.addToVariableList(d_current)
-                        # d_succ += '_' + str(index_of_phi2)
-                        # self.addToVariableList(d_succ)
-                        #
-                        # list_of_ors.append(Or(self.listOfBools[self.list_of_bools.index(holds_succ)],
-                        #                       self.listOfReals[self.list_of_reals.index(d_current)] > self.listOfReals[
-                        #                           self.list_of_reals.index(d_succ)]))
-                        #
-                        # self.no_of_subformula += 2
+                        # loop condition
+                        holds_succ += '_' + str(index_of_phi1)
+                        self.addToVariableList(holds_succ)
+                        d_current += '_' + str(index_of_phi1)
+                        self.addToVariableList(d_current)
+                        d_succ += '_' + str(index_of_phi1)
+                        self.addToVariableList(d_succ)
+
+                        list_of_ors.append(Or(Not(self.listOfBools[self.list_of_bools.index(holds_succ)]),
+                                              self.listOfReals[self.list_of_reals.index(d_current)] > self.listOfReals[
+                                                  self.list_of_reals.index(d_succ)]))
+                        self.no_of_subformula += 2
 
                     implies_antecedent_and1 = self.listOfReals[self.list_of_reals.index(prob_phi)] == sum_left
                     self.no_of_subformula += 1
-                    # prod_right_or = Or(list_of_ors)
-                    # self.no_of_subformula += 1
-                    # implies_antecedent_and2 = Implies(self.listOfReals[self.list_of_reals.index(prob_phi)] > 0,
-                    #                                  prod_right_or)
-                    # self.no_of_subformula += 1
-                    implies_antecedent = implies_antecedent_and1 # And(implies_antecedent_and1, implies_antecedent_and2)
-                    # self.no_of_subformula += 1
-                    self.solver.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
+
+                    prod_right_or = Or(list_of_ors)
+                    self.no_of_subformula += 1
+                    implies_antecedent_and2 = Implies(self.listOfReals[self.list_of_reals.index(prob_phi)] < 1,
+                                                      prod_right_or)
+                    self.no_of_subformula += 1
+                    implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
+                    self.no_of_subformula += 1
+                    # TODO previously redundantly added first_implies for each action inst of only once for each state
+                    self.solver.add(Implies(implies_precedent, implies_antecedent))
                     self.no_of_subformula += 1
 
         return relevant_quantifier

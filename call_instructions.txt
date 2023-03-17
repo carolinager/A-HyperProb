@@ -50,6 +50,13 @@ Documents/Research/HyperProbV2/benchmark/test/mdp.nm
 -stutterLength
 2
 
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . AT t1 (s1). ((hg0(t1) | hle0(t1)) & (P (X (1 = P (G le1(t1))) )=1))"
+-stutterLength
+2
+
 
 -modelPath
 Documents/Research/HyperProbV2/benchmark/test/mdp.nm
@@ -57,3 +64,4 @@ Documents/Research/HyperProbV2/benchmark/test/mdp.nm
 "ES sh . E s1 . AT t1 (s1). (P (X (1 = 1 - P (F ~(le1(t1))) ))=0.5)"
 -stutterLength
 1
+
