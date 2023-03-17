@@ -744,14 +744,17 @@ class SemanticsEncoder:
                 prob_phi += "_" + str(tup)
             prob_phi += '_' + str(index_of_phi)
             self.addToVariableList(prob_phi)
-            new_prob_const = self.listOfReals[self.list_of_reals.index(prob_phi)] >= float(0)
+            new_prob_const_0 = self.listOfReals[self.list_of_reals.index(prob_phi)] >= float(0)
+            new_prob_const_1 = self.listOfReals[self.list_of_reals.index(prob_phi)] <= float(1)
             first_implies = And(Implies(self.listOfBools[self.list_of_bools.index(holds2)],
                                         (self.listOfReals[self.list_of_reals.index(prob_phi)] == float(1))),
                                 Implies(And(Not(self.listOfBools[self.list_of_bools.index(holds1)]),
                                             Not(self.listOfBools[self.list_of_bools.index(holds2)])),
                                         (self.listOfReals[self.list_of_reals.index(prob_phi)] == float(0))),
-                                new_prob_const)
-            self.no_of_subformula += 3
+                                new_prob_const_0,
+                                new_prob_const_1)
+            self.solver.add(first_implies)
+            self.no_of_subformula += 4
 
             dicts_act = []
             dicts_stutter = []
@@ -829,8 +832,7 @@ class SemanticsEncoder:
                     self.no_of_subformula += 1
                     implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
                     self.no_of_subformula += 1
-                    self.solver.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
-                    # TODO isnt it redundant to add first_implies here ? only needs to be added once for each state, not for each action
+                    self.solver.add(Implies(implies_precedent, implies_antecedent))
                     self.no_of_subformula += 1
 
         return relevant_quantifier
@@ -916,6 +918,7 @@ class SemanticsEncoder:
                 self.addToVariableList(prob_phi)
 
                 new_prob_const = self.listOfReals[self.list_of_reals.index(prob_phi)] >= float(0)
+                # todo also require <= 1 ?
                 first_implies = And(Implies(self.listOfBools[self.list_of_bools.index(holds2)],
                                             (self.listOfReals[self.list_of_reals.index(prob_phi)] == float(1))),
                                     Implies(And(Not(self.listOfBools[self.list_of_bools.index(holds1)]),
@@ -1009,6 +1012,7 @@ class SemanticsEncoder:
                 prob_phi += '_' + str(index_of_phi)
                 self.addToVariableList(prob_phi)
 
+                # todo also require >=0 and <=1 ?
                 first_implies = Implies(Not(self.listOfBools[self.list_of_bools.index(holds1)]),
                                         (self.listOfReals[self.list_of_reals.index(prob_phi)] == float(0)))
                 self.no_of_subformula += 1
@@ -1088,8 +1092,10 @@ class SemanticsEncoder:
             new_prob_const_1 = self.listOfReals[self.list_of_reals.index(prob_phi)] <= float(1)
             first_implies = And(Implies(self.listOfBools[self.list_of_bools.index(holds1)],
                                         (self.listOfReals[self.list_of_reals.index(prob_phi)] == float(1))),
-                                new_prob_const_0, new_prob_const_1)
-            self.no_of_subformula += 1
+                                new_prob_const_0,
+                                new_prob_const_1)
+            self.solver.add(first_implies)
+            self.no_of_subformula += 3
 
             dicts_act = []
             dicts_stutter = []
@@ -1165,7 +1171,7 @@ class SemanticsEncoder:
                     self.no_of_subformula += 1
                     implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
                     self.no_of_subformula += 1
-                    self.solver.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
+                    self.solver.add(Implies(implies_precedent, implies_antecedent))
                     self.no_of_subformula += 1
         return relevant_quantifier
 
@@ -1272,7 +1278,6 @@ class SemanticsEncoder:
                     self.no_of_subformula += 1
                     implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
                     self.no_of_subformula += 1
-                    # TODO previously redundantly added first_implies for each action inst of only once for each state
                     self.solver.add(Implies(implies_precedent, implies_antecedent))
                     self.no_of_subformula += 1
 
