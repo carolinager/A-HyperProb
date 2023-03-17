@@ -648,7 +648,7 @@ class SemanticsEncoder:
             dicts_stutter = []
             for l in relevant_quantifier:
                 dicts_act.append(self.model.dict_of_acts[r_state[l - 1][0]])
-                dicts_stutter.append(list(range(self.stutterLength)))
+                dicts_stutter.append(list(range(r_state[l-1][1],self.stutterLength)))
             combined_acts = list(itertools.product(*dicts_act))
             combined_stutters = list(itertools.product(*dicts_stutter))
 
@@ -705,7 +705,7 @@ class SemanticsEncoder:
                     space = s.find(' ')
                     succ_state = (int(s[0:space]), 0)
                     list_of_all_succ.append([str(succ_state), s[space + 1:]])
-            else:
+            else: # if r_state[l][1] < h_tuple[l]
                 list_of_all_succ = [[str((r_state[l][0], r_state[l][1] + 1)), str(1)]]
             dicts.append(list_of_all_succ)
         return list(itertools.product(*dicts))
@@ -757,7 +757,7 @@ class SemanticsEncoder:
             dicts_stutter = []
             for l in relevant_quantifier:
                 dicts_act.append(self.model.dict_of_acts[r_state[l - 1][0]])
-                dicts_stutter.append(list(range(self.stutterLength)))
+                dicts_stutter.append(list(range(r_state[l-1][1],self.stutterLength)))
             combined_acts = list(itertools.product(*dicts_act))
             combined_stutters = list(itertools.product(*dicts_stutter))
 
@@ -929,7 +929,7 @@ class SemanticsEncoder:
                 dicts_stutter = []
                 for l in relevant_quantifier:
                     dicts_act.append(self.model.dict_of_acts[r_state[l - 1][0]])
-                    dicts_stutter.append(list(range(self.stutterLength)))
+                    dicts_stutter.append(list(range(r_state[l-1][1],self.stutterLength)))
                 combined_acts = list(itertools.product(*dicts_act))
                 combined_stutters = list(itertools.product(*dicts_stutter))
 
@@ -1018,7 +1018,7 @@ class SemanticsEncoder:
                 dicts_stutter = []
                 for l in relevant_quantifier:
                     dicts_act.append(self.model.dict_of_acts[r_state[l - 1][0]])
-                    dicts_stutter.append(list(range(self.stutterLength)))
+                    dicts_stutter.append(list(range(r_state[l-1][1],self.stutterLength)))
                 combined_acts = list(itertools.product(*dicts_act))
                 combined_stutters = list(itertools.product(*dicts_stutter))
 
@@ -1095,7 +1095,7 @@ class SemanticsEncoder:
             dicts_stutter = []
             for l in relevant_quantifier:
                 dicts_act.append(self.model.dict_of_acts[r_state[l - 1][0]])
-                dicts_stutter.append(list(range(self.stutterLength)))
+                dicts_stutter.append(list(range(r_state[l-1][1],self.stutterLength)))
             combined_acts = list(itertools.product(*dicts_act))
             combined_stutters = list(itertools.product(*dicts_stutter))
 
@@ -1200,7 +1200,7 @@ class SemanticsEncoder:
             dicts_stutter = []
             for l in relevant_quantifier:
                 dicts_act.append(self.model.dict_of_acts[r_state[l - 1][0]])
-                dicts_stutter.append(list(range(self.stutterLength)))
+                dicts_stutter.append(list(range(r_state[l-1][1],self.stutterLength))) # only consider stutterlength, with which the current state is reachable
             combined_acts = list(itertools.product(*dicts_act))
             combined_stutters = list(itertools.product(*dicts_stutter))
 
