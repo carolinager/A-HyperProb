@@ -4,14 +4,14 @@ const int n = 1;
 
 module basic
 
-       b   : [0..(2^n-1)];      // secret input key
-       ref : [0..2^(n-1)];      // reference value to test if-condition
-       j   : [0..2*n];          // attacker counter
-       l   : [0..1];            // indicate whether instructions in if should be executed
-       fin : [0..1];            // indicate whether exponentiation thread finished
+       b   : [0..pow(2,(n-1))];      // secret input key
+       ref : [0..pow(2,(n-1))];      // reference value to test if-condition
+       j   : [0..2*n];               // attacker counter
+       l   : [0..1];                 // indicate whether instructions in if should be executed
+       fin : [0..1];                 // indicate whether exponentiation thread finished
 
-       [] (l=0)&(ref>1)&(b>=ref)&(fin=0) -> 1 : (b'=b-ref)&(ref'=ref/2)&(l'=1); // b(i)=1
-       [] (l=0)&(ref>1)&(b<ref)&(fin=0)  -> 1 : (ref'=ref/2);                    // b(i)=0
+       [] (l=0)&(ref>1)&(b>=ref)&(fin=0) -> 1 : (b'=b-ref)&(ref'=floor(ref/2))&(l'=1); // b(i)=1
+       [] (l=0)&(ref>1)&(b<ref)&(fin=0)  -> 1 : (ref'=floor(ref/2));                    // b(i)=0
 
        [] (l=0)&(ref=1)&(b>=ref)&(fin=0) -> 1 : (b'=0)&(ref'=0)&(l'=1);  // b(i)=1
        [] (l=0)&(ref=1)&(b<ref)&(fin=0)  -> 1 : (ref'=0);                // b(i)=0
@@ -26,7 +26,7 @@ module basic
 
 endmodule
 
-init  (ref=2^(n-1))&(l=0)&(j=0)&(fin=0) endinit
+init  (ref=pow(2,(n-1)))&(l=0)&(j=0)&(fin=0) endinit
 
 label "fin"  = (fin=1);
 label "loop" = (l=1);
