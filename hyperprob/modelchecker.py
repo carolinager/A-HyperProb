@@ -198,7 +198,7 @@ class ModelChecker:
             for sublist in combined_stutter_range:
                 list_of_eqs = []
                 for state in self.model.getListOfStates():
-                    name_tau = "t_" + str(i) + "_" + str(state)
+                    name_tau = "t_" + str(i+1) + "_" + str(state) #TODO check consistency: changed this from i to i+1
                     self.addToVariableList(name_tau)
                     list_of_eqs.append(self.listOfInts[self.list_of_ints.index(name_tau)] == sublist[state])
                 list_of_ands.append(And(list_of_eqs))
