@@ -10,7 +10,6 @@ from hyperprob import propertyparser
 from hyperprob.sementicencoder import SemanticsEncoder
 
 
-
 class ModelChecker:
     def __init__(self, model, hyperproperty, lengthOfStutter):
         self.model = model
@@ -27,7 +26,7 @@ class ModelChecker:
         self.no_of_subformula = 0
         self.no_of_state_quantifier = 0
         self.no_of_stutter_quantifier = 0
-        self.stutter_state_mapping = [] # value at index of stutter variable is the corresponding state variable
+        self.stutter_state_mapping = []  # value at index of stutter variable is the corresponding state variable
 
     def modelCheck(self):
         non_quantified_property, self.no_of_state_quantifier = propertyparser.findNumberOfStateQuantifier(
@@ -185,6 +184,7 @@ class ModelChecker:
                 changed_hyperproperty = changed_hyperproperty.children[0]
             else:
                 break
+        # TODO: read and track relevant quantifiers
 
         index_of_phi = self.list_of_subformula.index(changed_hyperproperty)
 
@@ -216,8 +216,9 @@ class ModelChecker:
 
         # encode stutter scheduler quantifiers
         stutter_encoding_i = []
+        # TODO: there has to be a change here
         stutter_encoding_ipo = list_of_holds
-        for quant in range(self.no_of_stutter_quantifier, 0, -1): # n, ..., 1
+        for quant in range(self.no_of_stutter_quantifier, 0, -1):  # n, ..., 1
             for state_tuple in itertools.product(self.model.getListOfStates(), repeat=self.no_of_stutter_quantifier):
                 list_of_precond = list_of_precondition[quant - 1]  # indexed starting from 0
                 postcond = self.fetch_value(stutter_encoding_ipo, state_tuple)
@@ -239,15 +240,15 @@ class ModelChecker:
         state_encoding_ipo = copy.deepcopy(stutter_encoding_ipo)
         for quant in range(self.no_of_stutter_quantifier, 0, -1):
             n = len(self.model.getListOfStates())
-            len_i = int(len(state_encoding_ipo)/n)
-            #print("State quantifier encoding " + str(quant))
+            len_i = int(len(state_encoding_ipo) / n)
+            # print("State quantifier encoding " + str(quant))
             if list_of_state_AV[quant - 1] == 'A':
                 '''j = 0
                 print("state quantifier entry " + str(j))
                 print(state_encoding_ipo[(j*n):((j+1)*n)])'''
-                state_encoding_i = [And(state_encoding_ipo[(j*n):((j+1)*n)]) for j in range(len_i)]
+                state_encoding_i = [And(state_encoding_ipo[(j * n):((j + 1) * n)]) for j in range(len_i)]
             elif list_of_state_AV[quant - 1] == 'V':
-                state_encoding_i = [Or(state_encoding_ipo[(j*n):((j+1)*n)]) for j in range(len_i)]
+                state_encoding_i = [Or(state_encoding_ipo[(j * n):((j + 1) * n)]) for j in range(len_i)]
             # print(state_encoding_i[0])
             self.no_of_subformula += len_i
             # TODO as how many should this count: 1 or len_i
@@ -305,5 +306,5 @@ class ModelChecker:
         # assuming value is a tuple
         res = 0
         for i in range(0, len(value)):
-            res += value[i] * pow(len(self.model.getListOfStates()), len(value)-i-1)
+            res += value[i] * pow(len(self.model.getListOfStates()), len(value) - i - 1)
         return list_with_value[res]

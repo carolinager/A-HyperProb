@@ -648,7 +648,7 @@ class SemanticsEncoder:
             dicts_stutter = []
             for l in relevant_quantifier:
                 dicts_act.append(self.model.dict_of_acts[r_state[l - 1][0]])
-                dicts_stutter.append(list(range(r_state[l-1][1],self.stutterLength)))
+                dicts_stutter.append(list(range(r_state[l-1][1], self.stutterLength)))
             combined_acts = list(itertools.product(*dicts_act))
             combined_stutters = list(itertools.product(*dicts_stutter))
 

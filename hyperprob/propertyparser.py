@@ -186,7 +186,7 @@ def findNumberOfStutterQuantifier(hyperproperty):
     formula_duplicate = hyperproperty
     no_of_quantifier = 0
     while len(formula_duplicate.children) > 0 and type(formula_duplicate.children[0]) == Token:
-        if formula_duplicate.data in ['exist_scheduler', 'forall_scheduler', 'exist_state', 'forall_state' ]:
+        if formula_duplicate.data in ['exist_scheduler', 'forall_scheduler', 'exist_state', 'forall_state']:
             formula_duplicate = formula_duplicate.children[1]
         elif formula_duplicate.data in ['forall_stutter', 'exist_stutter']:
             no_of_quantifier += 1
@@ -199,6 +199,8 @@ def checkQuantifiersMatch():
     # extra TODO: add handling for missing stutter quantifiers (for all state, no stuttering)
     pass
 
+
+# TODO: check if quantifier variables are numbered starting from 0, check if all quantifiers are used
 
 def negateForallProperty(parsed_property):
     temp_traversed_property = parsed_property
@@ -221,7 +223,8 @@ def negateForallProperty(parsed_property):
             index_for_child = 2
         elif temp_traversed_property.data == 'not':
             pass
-        if temp_traversed_property.children[index_for_child].data in ['exist_state', 'forall_state', 'exist_stutter', 'forall_stutter']:
+        if temp_traversed_property.children[index_for_child].data in ['exist_state', 'forall_state', 'exist_stutter',
+                                                                      'forall_stutter']:
             temp_traversed_property = temp_traversed_property.children[index_for_child]
         elif temp_traversed_property.children[index_for_child].data in ['quantifiedformulastate']:
             temp_traversed_property = temp_traversed_property.children[1].children[0]
