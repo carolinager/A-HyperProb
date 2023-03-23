@@ -191,6 +191,7 @@ class ModelChecker:
         combined_stutter_range = list(
             itertools.product(list(range(self.stutterLength)), repeat=len(self.model.getListOfStates())))
         # TODO: naming of tau_i_s in algo line 5
+        list_of_tau_restrict = []
         list_of_holds = []
         list_of_precondition = []
         for i in range(len(list_of_stutter_AV)):
@@ -198,12 +199,15 @@ class ModelChecker:
             for sublist in combined_stutter_range:
                 list_of_eqs = []
                 for state in self.model.getListOfStates():
-                    name_tau = "t_" + str(i+1) + "_" + str(state) #TODO check consistency: changed this from i to i+1
+                    name_tau = "t_" + str(i+1) + "_" + str(state)
                     self.addToVariableList(name_tau)
                     list_of_eqs.append(self.listOfInts[self.list_of_ints.index(name_tau)] == sublist[state])
+                    list_of_tau_restrict.append(self.listOfInts[self.list_of_ints.index(name_tau)] >= int(0))
+                    list_of_tau_restrict.append(self.listOfInts[self.list_of_ints.index(name_tau)] < int(self.stutterLength))
                 list_of_ands.append(And(list_of_eqs))
                 self.no_of_subformula += 1
             list_of_precondition.append(list_of_ands)
+        self.solver.add(And(list_of_tau_restrict))
 
         # create list of holds_(s1,0)_..._0 for all state combinations
         for i in range(len(combined_list_of_states_and_stutter)):
