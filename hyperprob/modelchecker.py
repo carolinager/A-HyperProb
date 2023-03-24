@@ -208,6 +208,7 @@ class ModelChecker:
                 self.no_of_subformula += 1
             list_of_precondition.append(list_of_ands)
         self.solver.add(And(list_of_tau_restrict))
+        self.no_of_subformula += 1
 
         # create list of holds_(s1,0)_..._0 for all state combinations
         for i in range(len(combined_list_of_states_and_stutter)):
