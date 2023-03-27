@@ -1,8 +1,9 @@
 import copy
 import time
 import itertools
+import re
 
-from lark import Tree
+from lark import Tree, Token
 from z3 import Solver, Bool, Real, Int, Or, sat, And, Implies
 
 from hyperprob.utility import common
@@ -26,13 +27,15 @@ class ModelChecker:
         self.no_of_subformula = 0
         self.no_of_state_quantifier = 0
         self.no_of_stutter_quantifier = 0
-        self.stutter_state_mapping = []  # value at index of stutter variable is the corresponding state variable
+        self.stutter_state_mapping = None  # value at index of stutter variable is the corresponding state variable
 
     def modelCheck(self):
         non_quantified_property, self.no_of_state_quantifier = propertyparser.findNumberOfStateQuantifier(
             copy.deepcopy(self.initial_hyperproperty.parsed_property))
-        non_quantified_property, self.no_of_stutter_quantifier = propertyparser.findNumberOfStutterQuantifier(
+        non_quantified_property, self.stutter_state_mapping = propertyparser.findNumberOfStutterQuantifier(
             non_quantified_property.children[0])
+        self.no_of_stutter_quantifier = len(self.stutter_state_mapping.keys())
+        self.no_of_state_quantifier = len(set(self.stutter_state_mapping.values()))
         non_quantified_property = non_quantified_property.children[0]
         start_time = time.perf_counter()
         self.encodeActions()
@@ -167,18 +170,20 @@ class ModelChecker:
             if changed_hyperproperty.data in ['exist_scheduler', 'forall_scheduler']:
                 changed_hyperproperty = changed_hyperproperty.children[1]
             elif changed_hyperproperty.data == 'exist_state':
-                list_of_state_AV.append('V')
+                if int(changed_hyperproperty.children[0].value[1:]) in self.stutter_state_mapping.values():
+                    list_of_state_AV.append('V')
                 changed_hyperproperty = changed_hyperproperty.children[1]
             elif changed_hyperproperty.data == 'forall_state':
-                list_of_state_AV.append('A')
+                if int(changed_hyperproperty.children[0].value[1:]) in self.stutter_state_mapping.values():
+                    list_of_state_AV.append('A')
                 changed_hyperproperty = changed_hyperproperty.children[1]
             elif changed_hyperproperty.data == 'forall_stutter':
-                list_of_stutter_AV.append('AT')
-                self.stutter_state_mapping.append(int(changed_hyperproperty.children[1].children[0].value[1:]))
+                if int(changed_hyperproperty.children[0].value[1:]) in self.stutter_state_mapping.keys():
+                    list_of_stutter_AV.append('AT')
                 changed_hyperproperty = changed_hyperproperty.children[2]
             elif changed_hyperproperty.data == 'exist_stutter':
-                list_of_stutter_AV.append('VT')
-                self.stutter_state_mapping.append(int(changed_hyperproperty.children[1].children[0].value[1:]))
+                if int(changed_hyperproperty.children[0].value[1:]) in self.stutter_state_mapping.keys():
+                    list_of_stutter_AV.append('VT')
                 changed_hyperproperty = changed_hyperproperty.children[2]
             elif changed_hyperproperty.data in ['quantifiedformulastutter', 'quantifiedformulastate']:
                 changed_hyperproperty = changed_hyperproperty.children[0]
@@ -199,11 +204,12 @@ class ModelChecker:
             for sublist in combined_stutter_range:
                 list_of_eqs = []
                 for state in self.model.getListOfStates():
-                    name_tau = "t_" + str(i+1) + "_" + str(state)
+                    name_tau = "t_" + str(i + 1) + "_" + str(state)
                     self.addToVariableList(name_tau)
                     list_of_eqs.append(self.listOfInts[self.list_of_ints.index(name_tau)] == sublist[state])
                     list_of_tau_restrict.append(self.listOfInts[self.list_of_ints.index(name_tau)] >= int(0))
-                    list_of_tau_restrict.append(self.listOfInts[self.list_of_ints.index(name_tau)] < int(self.stutterLength))
+                    list_of_tau_restrict.append(
+                        self.listOfInts[self.list_of_ints.index(name_tau)] < int(self.stutterLength))
                 list_of_ands.append(And(list_of_eqs))
                 self.no_of_subformula += 1
             list_of_precondition.append(list_of_ands)
@@ -224,7 +230,7 @@ class ModelChecker:
         # TODO: there has to be a change here
         stutter_encoding_ipo = list_of_holds
         for quant in range(self.no_of_stutter_quantifier, 0, -1):  # n, ..., 1
-            for state_tuple in itertools.product(self.model.getListOfStates(), repeat=self.no_of_stutter_quantifier):
+            for state_tuple in itertools.product(self.model.getListOfStates(), repeat=len(self.stutter_state_mapping.keys())):
                 list_of_precond = list_of_precondition[quant - 1]  # indexed starting from 0
                 postcond = self.fetch_value(stutter_encoding_ipo, state_tuple)
                 if list_of_stutter_AV[quant - 1] == 'AT':

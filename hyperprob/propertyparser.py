@@ -1,5 +1,6 @@
 from lark import Lark, Token, Tree
 from hyperprob.utility import common
+import re
 
 
 class Property:
@@ -185,13 +186,23 @@ def findNumberOfStateQuantifier(hyperproperty):
 def findNumberOfStutterQuantifier(hyperproperty):
     formula_duplicate = hyperproperty
     no_of_quantifier = 0
+    rel_stutter_state_quantifier = dict()
     while len(formula_duplicate.children) > 0 and type(formula_duplicate.children[0]) == Token:
         if formula_duplicate.data in ['exist_scheduler', 'forall_scheduler', 'exist_state', 'forall_state']:
             formula_duplicate = formula_duplicate.children[1]
         elif formula_duplicate.data in ['forall_stutter', 'exist_stutter']:
             no_of_quantifier += 1
+            rel_stutter_state_quantifier[int(formula_duplicate.children[0].value[1:])] = int(formula_duplicate.children[1].children[0].value[1:])
             formula_duplicate = formula_duplicate.children[2]
-    return formula_duplicate, no_of_quantifier
+    rel_quant = set()
+    tokens = formula_duplicate.scan_values(lambda v: isinstance(v, Token))
+    for name in tokens:
+        if (re.search("t[1-9]+", name)) is not None:
+            rel_quant.add(int(name[1:]))
+    # dict[stutter quantifier] = state_quantifier
+    rel_stutter_state_quantifier = {key: rel_stutter_state_quantifier[key]
+                 for key in list(rel_quant) if key in list(rel_quant)}
+    return formula_duplicate, rel_stutter_state_quantifier
 
 
 def checkQuantifiersMatch():
