@@ -30,10 +30,11 @@ class ModelChecker:
         self.stutter_state_mapping = None  # value at index of stutter variable is the corresponding state variable
 
     def modelCheck(self):
-        non_quantified_property, self.no_of_state_quantifier = propertyparser.findNumberOfStateQuantifier(
+        non_quantified_property, self.no_of_state_quantifier, state_indices = propertyparser.checkStateQuantifiers(
             copy.deepcopy(self.initial_hyperproperty.parsed_property))
-        non_quantified_property, self.stutter_state_mapping = propertyparser.findNumberOfStutterQuantifier(
-            non_quantified_property.children[0])
+        non_quantified_property, self.stutter_state_mapping = propertyparser.checkStutterQuantifiers(
+            non_quantified_property.children[0], state_indices)
+        propertyparser.checkStuttersExist(self.stutter_state_mapping)
         self.no_of_stutter_quantifier = len(self.stutter_state_mapping.keys())
         self.no_of_state_quantifier = len(set(self.stutter_state_mapping.values()))
         non_quantified_property = non_quantified_property.children[0]
