@@ -187,7 +187,7 @@ def checkStateQuantifiers(hyperproperty):
     return formula_duplicate, no_of_quantifier, variable_indices
 
 
-def checkStutterQuantifiers(hyperproperty, state_indices): 
+def checkStutterQuantifiers(hyperproperty, state_indices):
     formula_duplicate = hyperproperty
     no_of_quantifier = 0
     quant_stutter_state_quantifier = dict() # mapping quantified variables, dict of the form {stutter : state}, i.e. dict[stutter quantifier] = state_quantifier
