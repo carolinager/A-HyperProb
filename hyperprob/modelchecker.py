@@ -4,7 +4,7 @@ import itertools
 import re
 
 from lark import Tree, Token
-from z3 import Solver, Bool, Real, Int, Or, sat, And, Implies
+from z3 import Solver, Bool, Real, Int, Or, sat, And, Implies, RealVal, Sum
 
 from hyperprob.utility import common
 from hyperprob import propertyparser
@@ -49,6 +49,7 @@ class ModelChecker:
             common.colourinfo("Encoded quantifiers", False)
             semanticEncoder = SemanticsEncoder(self.model, self.solver,
                                                self.list_of_subformula,
+                                               self.dictOfReals,
                                                self.dictOfBools,
                                                self.dictOfInts,
                                                self.no_of_subformula,
@@ -78,14 +79,37 @@ class ModelChecker:
             self.printResult(smt_end_time, 'forall')
 
     def encodeActions(self):
-        for state in self.model.parsed_model.states:
-            list_of_eqns = []
-            name = "a_" + str(state.id)  # a_1 means action for state 1
+        # encode global, state-independent scheduler probabilities for the actions
+        set_of_actions = set(itertools.chain.from_iterable(self.model.getDictOfActions().values()))
+        if len(set_of_actions) > 2:
+            raise ValueError(f"Model contains more than 2 different actions.")
+        scheduler_restrictions = []
+        sum_over_probs = []
+        for action in set_of_actions:
+            name = "a_" + str(action) # a_x is probability of action x
             self.addToVariableList(name)
-            for action in state.actions:
-                list_of_eqns.append(self.dictOfInts[name] == int(action.id))
-            self.solver.add(Or([par for par in list_of_eqns]))
-            self.no_of_subformula += 1
+            scheduler_restrictions.append(self.dictOfReals[name] >= 0)
+            scheduler_restrictions.append(self.dictOfReals[name] <= 1)
+            sum_over_probs.append(self.dictOfReals[name])
+        scheduler_restrictions.append(Sum(sum_over_probs) == 1)
+        self.solver.add(And(scheduler_restrictions))
+        self.no_of_subformula += 1
+        # encode scheduler probabilities for each state
+        state_scheduler_probs = []
+        for state in self.model.parsed_model.states:
+            name = "a_" + str(state.id) + "_" # a_s_x is probability of action x in state s
+            available_actions = list(state.actions)
+            if len(available_actions) == 1:
+                name += str(available_actions[0].id)
+                self.addToVariableList(name)
+                state_scheduler_probs.append(self.dictOfReals[name] == 1) # todo float(1) ??
+            elif len(available_actions) == 2:
+                for action in available_actions:
+                    name_x = name + str(action.id)
+                    self.addToVariableList(name_x)
+                    state_scheduler_probs.append(self.dictOfReals[name_x] == self.dictOfReals["a_" + str(action.id)])
+        self.solver.add(And(state_scheduler_probs))
+        self.no_of_subformula += 1
         common.colourinfo("Encoded actions in the MDP...")
 
     def encodeStuttering(self):
@@ -106,11 +130,11 @@ class ModelChecker:
         common.colourinfo("Encoded stutter actions in the MDP...")
 
     def addToVariableList(self, name):
-        if name[0] == 'h' and not name.startswith('holdsToInt'): # and name not in self.dictOfBools.keys():
+        if name[0] == 'h' and not name.startswith('holdsToInt'): # holds_
             self.dictOfBools[name] = Bool(name)
-        elif (name[0] in ['p', 'd', 'r'] or name.startswith('holdsToInt')): # and name not in self.dictOfReals.keys():
+        elif (name[0] in ['p', 'd', 'r', 'a', 's'] or name.startswith('holdsToInt')): # prob_, d_, rew_, a_s, sigma_a
             self.dictOfReals[name] = Real(name)
-        elif name[0] in ['a', 't']: # and name not in self.dictOfInts.keys():
+        elif name[0] in ['t']: # t_
             self.dictOfInts[name] = Int(name)
 
     def addToSubformulaList(self, formula_phi):  # add as you go any new subformula part as needed
@@ -274,7 +298,7 @@ class ModelChecker:
             list_of_actions = [None] * len(self.model.getListOfStates())
             for li in z3model:
                 if li.name()[0] == 'a':
-                    list_of_actions[int(li.name()[2:])] = z3model[li]
+                    list_of_actions[int(li.name()[2:])] = z3model[li] # todo change for probabilistic scheduler
         if truth.r == 1:
             return True, list_of_actions, self.solver.statistics(), z3_time
         elif truth.r == -1:
@@ -288,7 +312,7 @@ class ModelChecker:
                 common.colouroutput("The property HOLDS!")
                 print("\nThe values of variables of the witness are:")
                 for i in range(0, len(self.model.getListOfStates())):
-                    common.colouroutput("At state " + str(i) + " choose action " + str(actions[i]), False)
+                    common.colouroutput("At state " + str(i) + " choose action " + str(actions[i]), False) # todo change for probabilistic scheduler
             else:
                 common.colourerror("The property DOES NOT hold!")
         elif scheduler_quantifier == 'forall':
@@ -296,7 +320,7 @@ class ModelChecker:
                 common.colourerror("The property DOES NOT hold!")
                 print("\nThe actions at the corresponding states of a counterexample are:")
                 for i in range(0, len(self.model.getListOfStates())):
-                    common.colouroutput("At state " + str(i) + " choose action " + str(actions[i]), False)
+                    common.colouroutput("At state " + str(i) + " choose action " + str(actions[i]), False) # todo change for probabilistic scheduler
             else:
                 common.colouroutput("The property HOLDS!")
         common.colourinfo("\nTime to encode in seconds: " + str(round(smt_end_time, 2)), False)

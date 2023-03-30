@@ -217,10 +217,10 @@ def checkStutterQuantifiers(hyperproperty, state_indices):
     for name in tokens:
         if (re.search("t[1-9]+", name)) is not None:
             rel_quant.add(int(name[1:]))
-    real_stutter_state_quantifier = {key: quant_stutter_state_quantifier[key] for key in list(rel_quant)} # only those pairs where the stutter-variable occurs in the formula
-    if quant_stutter_state_quantifier != real_stutter_state_quantifier:
+    if rel_quant != quant_stutter_state_quantifier.keys():
         raise ValueError("The variables used in the formula do not match the quantified variables.")
-    return formula_duplicate, real_stutter_state_quantifier
+    # real_stutter_state_quantifier = {key: quant_stutter_state_quantifier[key] for key in rel_quant} # only those pairs where the stutter-variable occurs in the formula
+    return formula_duplicate, quant_stutter_state_quantifier
 
 
 def negateForallProperty(parsed_property):
