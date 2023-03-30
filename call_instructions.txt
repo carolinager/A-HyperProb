@@ -93,3 +93,17 @@ Documents/Research/HyperProbV2/benchmark/test/mdp.nm
 "ES sh . E s1 . E s2 .  ET t1 (s1). ET t2 (s2). ((hg0(t1) & hle0(t2)) & (P(G le1(t1)) < 1 ))"
 -stutterLength
 1
+
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . ET t1 (s1). (P(true U le1(t1)) = 1 )"
+-stutterLength
+1
+
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . ET t1 (s1). (P(true U[1,4] le1(t1)) = 0 )"
+-stutterLength
+1

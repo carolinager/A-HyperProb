@@ -599,6 +599,24 @@ class SemanticsEncoder:
                 stored_list.append([0])
         return list(itertools.product(*stored_list))
 
+    def genSuccessors(self, r_state, ca, h_tuple, relevant_quantifier):
+        # generate successors of r_state und ca and h_tuple, with respect to relevant_quantifiers
+        # returns: list with entries ["successor state", "probability of reaching that state"]
+        dicts = []
+        for l in range(len(relevant_quantifier)):
+            if h_tuple[l] == r_state[l][1]:
+                succ = (
+                    self.model.dict_of_acts_tran[str(r_state[l][0]) + " " + str(ca[l])])
+                list_of_all_succ = []
+                for s in succ:
+                    space = s.find(' ')
+                    succ_state = (int(s[0:space]), 0)
+                    list_of_all_succ.append([str(succ_state), s[space + 1:]])
+            else: # if r_state[l][1] < h_tuple[l]
+                list_of_all_succ = [[str((r_state[l][0], r_state[l][1] + 1)), str(1)]]
+            dicts.append(list_of_all_succ)
+        return list(itertools.product(*dicts))
+
     def encodeNextSemantics(self, hyperproperty, prev_relevant_quantifier=[]):
         phi1 = hyperproperty.children[0].children[0]
         index_of_phi1 = self.list_of_subformula.index(phi1)
@@ -626,7 +644,7 @@ class SemanticsEncoder:
             self.no_of_subformula += 3
             self.solver.add(first_and)
 
-            # create list of all possible stutterings and list of all possible actions for the currently considered states
+            # create list of all possible stutterings and list of all possible actions for r_state
             dicts_act = []
             dicts_stutter = []
             for l in relevant_quantifier:
@@ -647,56 +665,41 @@ class SemanticsEncoder:
                 implies_precedent = And(precond_list)
                 self.no_of_subformula += 1
 
-                # calculate probability that the next state satisfies phi1
-                sum_left = RealVal(0).as_fraction()
+                # encode probability calculation
+                sum_of_probs = RealVal(0).as_fraction()
                 for ca in combined_acts:
                     # create list of successors of r_state with probabilities under currently considered stuttering and actions
                     combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
 
-                    # sum over probabilities that phi1 holds in the successor states
+                    # calculate probability based on probabilities that phi1 holds in the successor states
                     for cs in combined_succ:
                         holdsToInt_succ = 'holdsToInt'
-                        prod_left_part = RealVal(1).as_fraction()
-                        # 
+                        product = RealVal(1).as_fraction()
+
                         for l in range(1, self.no_of_stutter_quantifier + 1):
                             if l in relevant_quantifier:
                                 l_index = relevant_quantifier.index(l)
                                 succ_state = cs[l_index][0]
                                 holdsToInt_succ += '_' + succ_state
-                                prod_left_part *= RealVal(cs[l_index][1]).as_fraction() # transition probability in the DTMC induced by the currently chosen stuttering
-                                prod_left_part *= self.dictOfReals["a_" + str(r_state[l_index][0]) + "_" + str(ca[l_index])]
+                                product *= RealVal(cs[l_index][1]).as_fraction() # transition probability in the DTMC induced by the currently chosen stuttering
+                                product *= self.dictOfReals[
+                                    "a_" + str(r_state[l_index][0]) + "_" + str(ca[l_index])]
                             else:
                                 holdsToInt_succ += '_' + str((0, 0))
 
                         holdsToInt_succ += '_' + str(index_of_phi1)
                         self.addToVariableList(holdsToInt_succ)
-                        prod_left_part *= self.dictOfReals[holdsToInt_succ]
+                        product *= self.dictOfReals[holdsToInt_succ]
 
-                        sum_left += prod_left_part
+                        sum_of_probs += product
                         self.no_of_subformula += 1
 
-                implies_antecedent_and = self.dictOfReals[prob_phi] == sum_left
+                implies_antecedent_and = self.dictOfReals[prob_phi] == sum_of_probs
                 self.no_of_subformula += 1
                 self.solver.add(Implies(implies_precedent, implies_antecedent_and))
                 self.no_of_subformula += 1
 
         return relevant_quantifier
-
-    def genSuccessors(self, r_state, ca, h_tuple, relevant_quantifier):
-        dicts = []
-        for l in range(len(relevant_quantifier)):
-            if h_tuple[l] == r_state[l][1]:
-                succ = (
-                    self.model.dict_of_acts_tran[str(r_state[l][0]) + " " + str(ca[l])])
-                list_of_all_succ = []
-                for s in succ:
-                    space = s.find(' ')
-                    succ_state = (int(s[0:space]), 0)
-                    list_of_all_succ.append([str(succ_state), s[space + 1:]])
-            else: # if r_state[l][1] < h_tuple[l]
-                list_of_all_succ = [[str((r_state[l][0], r_state[l][1] + 1)), str(1)]]
-            dicts.append(list_of_all_succ)
-        return list(itertools.product(*dicts))
 
     def encodeUnboundedUntilSemantics(self, hyperproperty, relevant_quantifier=[]):
         index_of_phi = self.list_of_subformula.index(hyperproperty)
@@ -711,6 +714,7 @@ class SemanticsEncoder:
         combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
 
         for r_state in combined_state_list:
+            # encode cases where we know probability is 0 or 1 and require probs variables to be in [0,1]
             holds1 = 'holds'
             for ind in range(0, len(r_state)):
                 if (ind + 1) in rel_quant1:
@@ -732,8 +736,10 @@ class SemanticsEncoder:
                 prob_phi += "_" + str(tup)
             prob_phi += '_' + str(index_of_phi)
             self.addToVariableList(prob_phi)
+
             new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
             new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+
             first_implies = And(Implies(self.dictOfBools[holds2],
                                         (self.dictOfReals[prob_phi] == float(1))),
                                 Implies(And(Not(self.dictOfBools[holds1]),
@@ -744,6 +750,7 @@ class SemanticsEncoder:
             self.solver.add(first_implies)
             self.no_of_subformula += 4
 
+            # create list of all possible stutterings and list of all possible actions for r_state
             dicts_act = []
             dicts_stutter = []
             for l in relevant_quantifier:
@@ -752,39 +759,46 @@ class SemanticsEncoder:
             combined_acts = list(itertools.product(*dicts_act))
             combined_stutters = list(itertools.product(*dicts_stutter))
 
-            for ca in combined_acts:
-                for h_tuple in combined_stutters:
-                    act_stu_str_list = []
-                    for l in range(len(relevant_quantifier)):
-                        name = 'a_' + str(r_state[relevant_quantifier[l] - 1][0])
-                        self.addToVariableList(name)
-                        stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
-                            r_state[relevant_quantifier[l] - 1][0])
-                        self.addToVariableList(stu_name)
-                        act_stu_str_list.append(self.dictOfInts[name] == int(ca[l]))
-                        act_stu_str_list.append(self.dictOfInts[stu_name] == int(h_tuple[l]))
-                    implies_precedent = And(self.dictOfBools[holds1],
-                                            Not(self.dictOfBools[holds2]),
-                                            And(act_stu_str_list))
-                    self.no_of_subformula += 2
+            # encode probability calculation
+            for h_tuple in combined_stutters:
+                # precondition: stutter variables are assigned the values in h_tuple, phi1 holds, phi2 doesnt hold
+                precond_list = []
+                for l in range(len(relevant_quantifier)):
+                    stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
+                        r_state[relevant_quantifier[l] - 1][0])
+                    # self.addToVariableList(stu_name)
+                    precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l]))
+                implies_precedent = And(self.dictOfBools[holds1],
+                                        Not(self.dictOfBools[holds2]),
+                                        And(precond_list))
+                self.no_of_subformula += 2
 
+                # encode probability calculation
+                sum_of_probs = RealVal(0).as_fraction()
+                loop_condition = []
+                for ca in combined_acts:
+                    # create list of successors of r_state with probabilities under currently considered stuttering and actions
                     combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
-                    sum_left = RealVal(0).as_fraction()
-                    list_of_ors = []
 
+                    # create equation system for probabilities and a loop condition to ensure correctness
                     for cs in combined_succ:
                         prob_succ = 'prob'
                         holds_succ = 'holds'
                         d_current = 'd'
                         d_succ = 'd'
-                        prod_left_part = RealVal(1).as_fraction()
+                        product = RealVal(1).as_fraction()
+                        sched_prob = RealVal(1).as_fraction()
+
                         for l in range(1, self.no_of_state_quantifier + 1):
                             if l in relevant_quantifier:
-                                succ_state = cs[relevant_quantifier.index(l)][0]
+                                l_index = relevant_quantifier.index(l)
+                                succ_state = cs[l_index][0]
                                 prob_succ += '_' + succ_state
                                 holds_succ += '_' + succ_state
                                 d_succ += '_' + succ_state
-                                prod_left_part *= RealVal(cs[relevant_quantifier.index(l)][1]).as_fraction()
+                                product *= RealVal(cs[l_index][1]).as_fraction()
+                                product *= self.dictOfReals["a_" + str(r_state[l_index][0]) + "_" + str(ca[l_index])]
+                                sched_prob *= self.dictOfReals["a_" + str(r_state[l_index][0]) + "_" + str(ca[l_index])]
                             else:
                                 prob_succ += '_' + str((0, 0))
                                 holds_succ += '_' + str((0, 0))
@@ -793,34 +807,32 @@ class SemanticsEncoder:
 
                         prob_succ += '_' + str(index_of_phi)
                         self.addToVariableList(prob_succ)
+                        product *= self.dictOfReals[prob_succ]
+                        sum_of_probs += product
+                        self.no_of_subformula += 1
+
+                        # loop condition
                         holds_succ += '_' + str(index_of_phi2)
                         self.addToVariableList(holds_succ)
-
                         d_current += '_' + str(index_of_phi2)
                         self.addToVariableList(d_current)
                         d_succ += '_' + str(index_of_phi2)
                         self.addToVariableList(d_succ)
-                        prod_left_part *= self.dictOfReals[prob_succ]
+                        loop_condition.append(And(sched_prob > 0,
+                                                  Or(self.dictOfBools[holds_succ],
+                                                     self.dictOfReals[d_current] > self.dictOfReals[d_succ])
+                                                  ))
+                        self.no_of_subformula += 3
 
-                        sum_left += prod_left_part
-                        self.no_of_subformula += 1
-
-                        list_of_ors.append(Or(self.dictOfBools[holds_succ],
-                                              self.dictOfReals[d_current] > self.dictOfReals[d_succ])) # todo why not int
-
-                        self.no_of_subformula += 2
-
-                    implies_antecedent_and1 = self.dictOfReals[prob_phi] == sum_left
-                    self.no_of_subformula += 1
-                    prod_right_or = Or(list_of_ors)
-                    self.no_of_subformula += 1
-                    implies_antecedent_and2 = Implies(self.dictOfReals[prob_phi] > 0,
-                                                      prod_right_or)
-                    self.no_of_subformula += 1
-                    implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
-                    self.no_of_subformula += 1
-                    self.solver.add(Implies(implies_precedent, implies_antecedent))
-                    self.no_of_subformula += 1
+                implies_antecedent_and1 = self.dictOfReals[prob_phi] == sum_of_probs
+                self.no_of_subformula += 1
+                implies_antecedent_and2 = Implies(self.dictOfReals[prob_phi] > 0,
+                                                  Or(loop_condition))
+                self.no_of_subformula += 2
+                implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
+                self.no_of_subformula += 1
+                self.solver.add(Implies(implies_precedent, implies_antecedent))
+                self.no_of_subformula += 1
 
         return relevant_quantifier
 
@@ -834,6 +846,7 @@ class SemanticsEncoder:
         phi2 = hyperproperty.children[0].children[3]
         index_of_phi2 = self.list_of_subformula.index(phi2)
 
+        # case distinction on the values of k1, k2
         if k2 == 0:
             rel_quant1 = self.encodeSemantics(phi1)
             relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant1)
@@ -882,6 +895,7 @@ class SemanticsEncoder:
             # rel_quant2 = int(str(hyperproperty.children[0].children[3].children[1].children[0])[1:])
 
             for r_state in combined_state_list:
+                # encode cases where we know probability is 0 or 1 and require probs variables to be in [0,1]
                 holds1 = 'holds'
                 for ind in range(0, len(r_state)):
                     if (ind + 1) in rel_quant1:
@@ -906,6 +920,7 @@ class SemanticsEncoder:
 
                 new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
                 new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+
                 first_implies = And(Implies(self.dictOfBools[holds2],
                                             (self.dictOfReals[prob_phi] == float(1))),
                                     Implies(And(Not(self.dictOfBools[holds1]),
@@ -916,6 +931,7 @@ class SemanticsEncoder:
                 self.no_of_subformula += 4
                 self.solver.add(first_implies)
 
+                # create list of all possible stutterings and list of all possible actions for r_state
                 dicts_act = []
                 dicts_stutter = []
                 for l in relevant_quantifier:
@@ -924,47 +940,52 @@ class SemanticsEncoder:
                 combined_acts = list(itertools.product(*dicts_act))
                 combined_stutters = list(itertools.product(*dicts_stutter))
 
-                for ca in combined_acts:
-                    for h_tuple in combined_stutters:
-                        act_stu_str_list = []
-                        for l in range(len(relevant_quantifier)):
-                            name = 'a_' + str(r_state[relevant_quantifier[0] - 1])
-                            self.addToVariableList(name)
-                            stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
-                                r_state[relevant_quantifier[l] - 1][0])
-                            self.addToVariableList(stu_name)
-                            act_stu_str_list.append(self.dictOfInts[name] == int(ca[l]))
-                            act_stu_str_list.append(self.dictOfInts[stu_name] == int(h_tuple[l]))
-                        implies_precedent = And(self.dictOfBools[holds1],
-                                                Not(self.dictOfBools[holds2]),
-                                                And(act_stu_str_list))
-                        self.no_of_subformula += 2
+                # encode probability calculation
+                for h_tuple in combined_stutters:
+                    # precondition: stutter variables are assigned the values in h_tuple, phi1 holds, phi2 doesnt hold
+                    precond_list = []
+                    for l in range(len(relevant_quantifier)):
+                        stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
+                            r_state[relevant_quantifier[l] - 1][0])
+                        # self.addToVariableList(stu_name)
+                        precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l]))
+                    implies_precedent = And(self.dictOfBools[holds1],
+                                            Not(self.dictOfBools[holds2]),
+                                            And(precond_list))
+                    self.no_of_subformula += 2
 
+                    # encode probability calculation
+                    sum_of_probs = RealVal(0).as_fraction()
+                    for ca in combined_acts:
+                        # create list of successors of r_state with probabilities under currently considered stuttering and actions
                         combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
-                        sum_left = RealVal(0).as_fraction()
 
+                        # calculate probability based on probabilities that successor states satisfy the property with bounds decreased by 1
                         for cs in combined_succ:
                             prob_succ = 'prob'
-                            prod_left_part = RealVal(1).as_fraction()
+                            product = RealVal(1).as_fraction()
+
                             for l in range(1, self.no_of_state_quantifier + 1):
                                 if l in relevant_quantifier:
-                                    succ_state = cs[relevant_quantifier.index(l)][0]
+                                    l_index = relevant_quantifier.index(l)
+                                    succ_state = cs[l_index][0]
                                     prob_succ += '_' + succ_state
-                                    prod_left_part *= RealVal(cs[relevant_quantifier.index(l)][1]).as_fraction()
+                                    product *= RealVal(cs[l_index][1]).as_fraction()
+                                    product *= self.dictOfReals["a_" + str(r_state[l_index][0]) + "_" + str(ca[l_index])]
                                 else:
                                     prob_succ += '_' + str((0, 0))
 
                             prob_succ += '_' + str(index_of_replaced)
                             self.addToVariableList(prob_succ)
-                            prod_left_part *= self.dictOfReals[prob_succ]
+                            product *= self.dictOfReals[prob_succ]
 
-                            sum_left += prod_left_part
+                            sum_of_probs += product
                             self.no_of_subformula += 1
 
-                        implies_antecedent_and = self.dictOfReals[prob_phi] == sum_left
-                        self.no_of_subformula += 1
-                        self.solver.add(Implies(implies_precedent, implies_antecedent_and))
-                        self.no_of_subformula += 1
+                    implies_antecedent = self.dictOfReals[prob_phi] == sum_of_probs
+                    self.no_of_subformula += 1
+                    self.solver.add(Implies(implies_precedent, implies_antecedent))
+                    self.no_of_subformula += 1
 
         elif k1 > 0:
             left, k_1, k_2, right = hyperproperty.children[0].children
@@ -973,7 +994,7 @@ class SemanticsEncoder:
             par1.value = str(int(k_1.value) - 1)
             par2.value = str(int(k_2.value) - 1)
             hyperproperty.children[0].children[
-                1] = par1  # so now formula_duplicate is basically phi1_until[0,k2-1]_phi2 Don't be confused!!
+                1] = par1  # so now formula_duplicate is basically phi1_until[k1-1,k2-1]_phi2 Don't be confused!!
             hyperproperty.children[0].children[2] = par2
             self.list_of_subformula.append(hyperproperty)
             index_of_replaced = len(
@@ -985,6 +1006,7 @@ class SemanticsEncoder:
             # rel_quant2 = int(str(hyperproperty.children[0].children[3].children[1].children[0])[1:])
 
             for r_state in combined_state_list:
+                # encode cases where we know probability is 0 and require probs variables to be in [0,1]
                 holds1 = 'holds'
                 for ind in range(0, len(r_state)):
                     if (ind + 1) == rel_quant1:
@@ -1001,13 +1023,15 @@ class SemanticsEncoder:
 
                 new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
                 new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+
                 first_implies = And(Implies(Not(self.dictOfBools[holds1]),
                                         (self.dictOfReals[prob_phi] == float(0))),
                                     new_prob_const_0,
                                     new_prob_const_1)
-                self.no_of_subformula += 3
                 self.solver.add(first_implies)
+                self.no_of_subformula += 3
 
+                # create list of all possible stutterings and list of all possible actions for r_state
                 dicts_act = []
                 dicts_stutter = []
                 for l in relevant_quantifier:
@@ -1016,47 +1040,51 @@ class SemanticsEncoder:
                 combined_acts = list(itertools.product(*dicts_act))
                 combined_stutters = list(itertools.product(*dicts_stutter))
 
-                for ca in combined_acts:
-                    for h_tuple in combined_stutters:
-                        act_stu_str_list = []
-                        for l in range(len(relevant_quantifier)):
-                            name = 'a_' + str(r_state[relevant_quantifier[l] - 1][0])
-                            self.addToVariableList(name)
-                            stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
-                                r_state[relevant_quantifier[l] - 1][0])
-                            self.addToVariableList(stu_name)
-                            act_stu_str_list.append(self.dictOfInts[name] == int(ca[l]))
-                            act_stu_str_list.append(self.dictOfInts[stu_name] == int(h_tuple[l]))
-                        implies_precedent = And(self.dictOfBools[holds1],
-                                                And(act_stu_str_list))
-                        self.no_of_subformula += 2
+                # encode probability calculation
+                for h_tuple in combined_stutters:
+                    # precondition: stutter variables are assigned the values in h_tuple, phi1 holds
+                    precond_list = []
+                    for l in range(len(relevant_quantifier)):
+                        stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
+                            r_state[relevant_quantifier[l] - 1][0])
+                        # self.addToVariableList(stu_name)
+                        precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l]))
+                    implies_precedent = And(self.dictOfBools[holds1],
+                                            And(precond_list))
+                    self.no_of_subformula += 2
 
+                    # encode probability calculation
+                    sum_of_probs = RealVal(0).as_fraction()
+                    for ca in combined_acts:
+                        # create list of successors of r_state with probabilities under currently considered stuttering and actions
                         combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
-                        sum_left = RealVal(0).as_fraction()
 
+                        # create equation system for probabilities
                         for cs in combined_succ:
                             prob_succ = 'prob'
-                            prod_left_part = RealVal(1).as_fraction()
+                            product = RealVal(1).as_fraction()
+
                             for l in range(1, self.no_of_state_quantifier + 1):
                                 if l in relevant_quantifier:
-                                    succ_state = cs[relevant_quantifier.index(l)][0]
+                                    l_index = relevant_quantifier.index(l)
+                                    succ_state = cs[l_index][0]
                                     prob_succ += '_' + succ_state
-                                    prod_left_part *= RealVal(cs[relevant_quantifier.index(l)][1]).as_fraction()
+                                    product *= RealVal(cs[l_index][1]).as_fraction()
+                                    product *= self.dictOfReals[
+                                        "a_" + str(r_state[l_index][0]) + "_" + str(ca[l_index])]
                                 else:
                                     prob_succ += '_' + str((0, 0))
 
                             prob_succ += '_' + str(index_of_replaced)
                             self.addToVariableList(prob_succ)
-                            prod_left_part *= self.dictOfReals[prob_succ]
-
-                            prod_left_part *= self.dictOfReals[prob_succ]
-                            sum_left += prod_left_part
+                            product *= self.dictOfReals[prob_succ]
+                            sum_of_probs += product
                             self.no_of_subformula += 1
 
-                        implies_antecedent_and = self.dictOfReals[prob_phi] == sum_left
-                        self.no_of_subformula += 1
-                        self.solver.add(Implies(implies_precedent, implies_antecedent_and))
-                        self.no_of_subformula += 1
+                    implies_antecedent_and = self.dictOfReals[prob_phi] == sum_of_probs
+                    self.no_of_subformula += 1
+                    self.solver.add(Implies(implies_precedent, implies_antecedent_and))
+                    self.no_of_subformula += 1
         return relevant_quantifier, rel_quant1, rel_quant2
 
     def encodeFutureSemantics(self, hyperproperty, relevant_quantifier=[]):
@@ -1068,6 +1096,7 @@ class SemanticsEncoder:
         combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
 
         for r_state in combined_state_list:
+            # encode cases where we know probability is 1 and require probs variables to be in [0,1]
             holds1 = 'holds'
             str_r_state = ""
             for ind in r_state:
@@ -1077,8 +1106,10 @@ class SemanticsEncoder:
             prob_phi = 'prob'
             prob_phi += str_r_state + '_' + str(index_of_phi)
             self.addToVariableList(prob_phi)
+
             new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
             new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+
             first_implies = And(Implies(self.dictOfBools[holds1],
                                         (self.dictOfReals[prob_phi] == float(1))),
                                 new_prob_const_0,
@@ -1086,6 +1117,7 @@ class SemanticsEncoder:
             self.solver.add(first_implies)
             self.no_of_subformula += 3
 
+            # create list of all possible stutterings and list of all possible actions for r_state
             dicts_act = []
             dicts_stutter = []
             for l in relevant_quantifier:
@@ -1094,38 +1126,45 @@ class SemanticsEncoder:
             combined_acts = list(itertools.product(*dicts_act))
             combined_stutters = list(itertools.product(*dicts_stutter))
 
-            for ca in combined_acts:
-                for h_tuple in combined_stutters:
-                    act_stu_str_list = []
-                    for l in range(len(relevant_quantifier)):
-                        name = 'a_' + str(r_state[relevant_quantifier[l] - 1][0])
-                        self.addToVariableList(name)
-                        stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
-                            r_state[relevant_quantifier[l] - 1][0])
-                        self.addToVariableList(stu_name)
-                        act_stu_str_list.append(self.dictOfInts[name] == int(ca[l]))
-                        act_stu_str_list.append(self.dictOfInts[stu_name] == int(h_tuple[l]))
-                    implies_precedent = And(Not(self.dictOfBools[holds1]),
-                                            And(act_stu_str_list))
-                    self.no_of_subformula += 2
+            # encode probability calculation
+            for h_tuple in combined_stutters:
+                # precondition: stutter variables are assigned the values in h_tuple, phi1 doesnt hold
+                precond_list = []
+                for l in range(len(relevant_quantifier)):
+                    stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
+                        r_state[relevant_quantifier[l] - 1][0])
+                    # self.addToVariableList(stu_name)
+                    precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l]))
+                implies_precedent = And(Not(self.dictOfBools[holds1]),
+                                        And(precond_list))
+                self.no_of_subformula += 2
 
+                sum_of_probs = RealVal(0).as_fraction()
+                loop_condition = []
+
+                for ca in combined_acts:
+                    # create list of successors of r_state with probabilities under currently considered stuttering and actions
                     combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
-                    sum_left = RealVal(0).as_fraction()
-                    list_of_ors = []
 
+                    # create equation system for probabilities and a loop condition to ensure correctness
                     for cs in combined_succ:
                         prob_succ = 'prob'
                         holds_succ = 'holds'
                         d_current = 'd'
                         d_succ = 'd'
-                        prod_left_part = RealVal(1).as_fraction()
+                        product = RealVal(1).as_fraction()
+                        sched_prob = RealVal(1).as_fraction()
+
                         for l in range(1, self.no_of_state_quantifier + 1):
                             if l in relevant_quantifier:
-                                succ_state = cs[relevant_quantifier.index(l)][0]
+                                l_index = relevant_quantifier.index(l)
+                                succ_state = cs[l_index][0]
                                 prob_succ += '_' + succ_state
                                 holds_succ += '_' + succ_state
                                 d_succ += '_' + succ_state
-                                prod_left_part *= RealVal(cs[relevant_quantifier.index(l)][1]).as_fraction()
+                                product *= RealVal(cs[l_index][1]).as_fraction()
+                                product *= self.dictOfReals["a_" + str(r_state[l_index][0]) + "_" + str(ca[l_index])]
+                                sched_prob *= self.dictOfReals["a_" + str(r_state[l_index][0]) + "_" + str(ca[l_index])]
                             else:
                                 prob_succ += '_' + str((0, 0))
                                 holds_succ += '_' + str((0, 0))
@@ -1134,33 +1173,32 @@ class SemanticsEncoder:
 
                         prob_succ += '_' + str(index_of_phi)
                         self.addToVariableList(prob_succ)
+                        product *= self.dictOfReals[prob_succ]
+                        sum_of_probs += product
+                        self.no_of_subformula += 1
+
+                        # loop condition
                         holds_succ += '_' + str(index_of_phi1)
                         self.addToVariableList(holds_succ)
                         d_current += '_' + str(index_of_phi1)
                         self.addToVariableList(d_current)
                         d_succ += '_' + str(index_of_phi1)
                         self.addToVariableList(d_succ)
-                        prod_left_part *= self.dictOfReals[prob_succ]
+                        loop_condition.append(And(sched_prob > 0,
+                                                  Or(self.dictOfBools[holds_succ],
+                                                     self.dictOfReals[d_current] > self.dictOfReals[d_succ])
+                                                  ))
+                        self.no_of_subformula += 3
 
-                        sum_left += prod_left_part
-                        self.no_of_subformula += 1
-
-                        list_of_ors.append(Or(self.dictOfBools[holds_succ],
-                                              self.dictOfReals[d_current] > self.dictOfReals[d_succ]))
-
-                        self.no_of_subformula += 2
-
-                    implies_antecedent_and1 = self.dictOfReals[prob_phi] == sum_left
-                    self.no_of_subformula += 1
-                    prod_right_or = Or(list_of_ors)
-                    self.no_of_subformula += 1
-                    implies_antecedent_and2 = Implies(self.dictOfReals[prob_phi] > 0,
-                                                      prod_right_or)
-                    self.no_of_subformula += 1
-                    implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
-                    self.no_of_subformula += 1
-                    self.solver.add(Implies(implies_precedent, implies_antecedent))
-                    self.no_of_subformula += 1
+                implies_antecedent_and1 = self.dictOfReals[prob_phi] == sum_of_probs
+                self.no_of_subformula += 1
+                implies_antecedent_and2 = Implies(self.dictOfReals[prob_phi] > 0,
+                                                  Or(loop_condition))
+                self.no_of_subformula += 2
+                implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
+                self.no_of_subformula += 1
+                self.solver.add(Implies(implies_precedent, implies_antecedent))
+                self.no_of_subformula += 1
         return relevant_quantifier
 
     def encodeGlobalSemantics(self, hyperproperty, relevant_quantifier=[]):
@@ -1172,6 +1210,7 @@ class SemanticsEncoder:
         combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
 
         for r_state in combined_state_list:
+            # encode cases where we know probability is 0 and require probs variables to be in [0,1]
             holds1 = 'holds'
             str_r_state = ""
             for tup in r_state:
@@ -1190,6 +1229,7 @@ class SemanticsEncoder:
             self.solver.add(first_implies)
             self.no_of_subformula += 1
 
+            # create list of all possible stutterings and list of all possible actions for r_state
             dicts_act = []
             dicts_stutter = []
             for l in relevant_quantifier:
@@ -1198,38 +1238,45 @@ class SemanticsEncoder:
             combined_acts = list(itertools.product(*dicts_act))
             combined_stutters = list(itertools.product(*dicts_stutter))
 
-            for ca in combined_acts:
-                for h_tuple in combined_stutters:
-                    act_stu_str_list = []
-                    for l in range(len(relevant_quantifier)):
-                        name = 'a_' + str(r_state[relevant_quantifier[l] - 1][0])
-                        self.addToVariableList(name)
-                        stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
-                            r_state[relevant_quantifier[l] - 1][0])
-                        self.addToVariableList(stu_name)
-                        act_stu_str_list.append(self.dictOfInts[name] == int(ca[l]))
-                        act_stu_str_list.append(self.dictOfInts[stu_name] == int(h_tuple[l]))
-                    implies_precedent = And(self.dictOfBools[holds1],
-                                            And(act_stu_str_list))
-                    self.no_of_subformula += 2
+            # encode probability calculation
+            for h_tuple in combined_stutters:
+                # precondition: stutter variables are assigned the values in h_tuple, phi1 doesnt hold
+                precond_list = []
+                for l in range(len(relevant_quantifier)):
+                    stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
+                        r_state[relevant_quantifier[l] - 1][0])
+                    # self.addToVariableList(stu_name)
+                    precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l]))
+                implies_precedent = And(self.dictOfBools[holds1],
+                                        And(precond_list))
+                self.no_of_subformula += 2
 
+                sum_of_probs = RealVal(0).as_fraction()
+                loop_condition = []
+
+                for ca in combined_acts:
+                    # create list of successors of r_state with probabilities under currently considered stuttering and actions
                     combined_succ = self.genSuccessors(r_state, ca, h_tuple, relevant_quantifier)
-                    sum_left = RealVal(0).as_fraction()
-                    list_of_ors = []
 
+                    # create equation system for probabilities and a loop condition to ensure correctness
                     for cs in combined_succ:
                         prob_succ = 'prob'
                         holds_succ = 'holds'
                         d_current = 'd'
                         d_succ = 'd'
-                        prod_left_part = RealVal(1).as_fraction()
+                        product = RealVal(1).as_fraction()
+                        sched_prob = RealVal(1).as_fraction()
+
                         for l in range(1, self.no_of_state_quantifier + 1):
                             if l in relevant_quantifier:
-                                succ_state = cs[relevant_quantifier.index(l)][0]
+                                l_index = relevant_quantifier.index(l)
+                                succ_state = cs[l_index][0]
                                 prob_succ += '_' + succ_state
                                 holds_succ += '_' + succ_state
                                 d_succ += '_' + succ_state
-                                prod_left_part *= RealVal(cs[relevant_quantifier.index(l)][1]).as_fraction()
+                                product *= RealVal(cs[l_index][1]).as_fraction()
+                                product *= self.dictOfReals["a_" + str(r_state[l_index][0]) + "_" + str(ca[l_index])]
+                                sched_prob *= self.dictOfReals["a_" + str(r_state[l_index][0]) + "_" + str(ca[l_index])]
                             else:
                                 prob_succ += '_' + str((0, 0))
                                 holds_succ += '_' + str((0, 0))
@@ -1238,9 +1285,8 @@ class SemanticsEncoder:
 
                         prob_succ += '_' + str(index_of_phi)
                         self.addToVariableList(prob_succ)
-
-                        prod_left_part *= self.dictOfReals[prob_succ]
-                        sum_left += prod_left_part
+                        product *= self.dictOfReals[prob_succ]
+                        sum_of_probs += product
                         self.no_of_subformula += 1
 
                         # loop condition
@@ -1250,22 +1296,20 @@ class SemanticsEncoder:
                         self.addToVariableList(d_current)
                         d_succ += '_' + str(index_of_phi1)
                         self.addToVariableList(d_succ)
+                        loop_condition.append(And(sched_prob > 0,
+                                                  Or(Not(self.dictOfBools[holds_succ]),
+                                                     self.dictOfReals[d_current] > self.dictOfReals[d_succ])
+                                                  ))
+                        self.no_of_subformula += 3
 
-                        list_of_ors.append(Or(Not(self.dictOfBools[holds_succ]),
-                                              self.dictOfReals[d_current] > self.dictOfReals[d_succ]))
-                        self.no_of_subformula += 2
-
-                    implies_antecedent_and1 = self.dictOfReals[prob_phi] == sum_left
-                    self.no_of_subformula += 1
-
-                    prod_right_or = Or(list_of_ors)
-                    self.no_of_subformula += 1
-                    implies_antecedent_and2 = Implies(self.dictOfReals[prob_phi] < 1,
-                                                      prod_right_or)
-                    self.no_of_subformula += 1
-                    implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
-                    self.no_of_subformula += 1
-                    self.solver.add(Implies(implies_precedent, implies_antecedent))
-                    self.no_of_subformula += 1
+                implies_antecedent_and1 = self.dictOfReals[prob_phi] == sum_of_probs
+                self.no_of_subformula += 1
+                implies_antecedent_and2 = Implies(self.dictOfReals[prob_phi] < 1,
+                                                  Or(loop_condition))
+                self.no_of_subformula += 2
+                implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
+                self.no_of_subformula += 1
+                self.solver.add(Implies(implies_precedent, implies_antecedent))
+                self.no_of_subformula += 1
 
         return relevant_quantifier

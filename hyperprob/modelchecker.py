@@ -68,6 +68,7 @@ class ModelChecker:
             common.colourinfo("Encoded quantifiers", False)
             semanticEncoder = SemanticsEncoder(self.model, self.solver,
                                                self.list_of_subformula,
+                                               self.dictOfReals,
                                                self.dictOfBools,
                                                self.dictOfInts,
                                                self.no_of_subformula,
@@ -293,34 +294,48 @@ class ModelChecker:
         truth = self.solver.check()
         z3_time = time.perf_counter() - starting_time
         list_of_actions = None
+        set_of_holds = set()
         if truth == sat:
             z3model = self.solver.model()
-            list_of_actions = [None] * len(self.model.getListOfStates())
+            list_of_actions = [None] * len(set(itertools.chain.from_iterable(self.model.getDictOfActions().values())))
             for li in z3model:
-                if li.name()[0] == 'a':
-                    list_of_actions[int(li.name()[2:])] = z3model[li] # todo change for probabilistic scheduler
+                if li.name()[0] == 'h' and li.name()[-1] == '0' and z3model[li]:
+                    state_tuple_str = li.name()[6:-2]
+                    state_tuple_list = [state_tuple_str[i*6 + (i+1)] for i in range(self.no_of_stutter_quantifier)]
+                    set_of_holds.add(tuple(state_tuple_list))
+                if li.name()[0] == 'a' and len(li.name()) == 3:
+                    list_of_actions[int(li.name()[2:])] = z3model[li]
+                # todo also output stuttering choices?
         if truth.r == 1:
-            return True, list_of_actions, self.solver.statistics(), z3_time
+            return True, list_of_actions, set_of_holds, self.solver.statistics(), z3_time
         elif truth.r == -1:
-            return False, list_of_actions, self.solver.statistics(), z3_time
+            return False, list_of_actions, set_of_holds, self.solver.statistics(), z3_time
 
     def printResult(self, smt_end_time, scheduler_quantifier):
+        # todo add variable assignments ?
+        # todo add stuttering decisions?
         common.colourinfo("Checking...", False)
-        smt_result, actions, statistics, z3_time = self.checkResult()
+        smt_result, actions, holds, statistics, z3_time = self.checkResult()
         if scheduler_quantifier == 'exists':
             if smt_result:
                 common.colouroutput("The property HOLDS!")
                 print("\nThe values of variables of the witness are:")
-                for i in range(0, len(self.model.getListOfStates())):
-                    common.colouroutput("At state " + str(i) + " choose action " + str(actions[i]), False) # todo change for probabilistic scheduler
+                print("\nThe following state variable assignments satisfy the property (tuples ordered by stutter quantification):") #todo order of quantification? order of stutterquant ??
+                print(holds) # for each assignment: state associated with first stutter-sched var is listed first, and so on
+                print("\nIf both actions are available at a state:")
+                for i in range(0, len(actions)):
+                    common.colouroutput("Choose action " + str(i) + " with probability " + str(actions[i]), False)
             else:
                 common.colourerror("The property DOES NOT hold!")
         elif scheduler_quantifier == 'forall':
             if smt_result:
                 common.colourerror("The property DOES NOT hold!")
-                print("\nThe actions at the corresponding states of a counterexample are:")
-                for i in range(0, len(self.model.getListOfStates())):
-                    common.colouroutput("At state " + str(i) + " choose action " + str(actions[i]), False) # todo change for probabilistic scheduler
+                print("\nThe values of variables of a counterexample are:")
+                print("\nThe following state variable assignments do not satisfy the property (tuples ordered by stutter quantification):")  # todo order of quantification? order of stutterquant ??
+                print(holds)  # for each assignment: state associated with first stutter-sched var is listed first, and so on
+                print("\nIf both actions are available at a state:")
+                for i in range(0, len(actions)):
+                    common.colouroutput("Choose action " + str(i) + " with probability " + str(actions[i]), False)
             else:
                 common.colouroutput("The property HOLDS!")
         common.colourinfo("\nTime to encode in seconds: " + str(round(smt_end_time, 2)), False)
