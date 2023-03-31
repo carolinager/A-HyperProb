@@ -3,6 +3,8 @@ import stormpy
 from z3 import RealVal
 from hyperprob.utility import common
 
+import itertools
+
 
 def rebuildExactValueModel(initial_model):
     file_str = ""
@@ -105,6 +107,9 @@ class Model:
 
     def getDictOfActions(self):
         return self.dict_of_acts
+
+    def getNumberOfActions(self):
+        return len(set(itertools.chain.from_iterable(self.dict_of_acts.values())))
 
     def hasRewards(self):
         return self.has_rewards

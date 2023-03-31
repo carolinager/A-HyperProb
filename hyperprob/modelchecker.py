@@ -49,12 +49,11 @@ class ModelChecker:
             common.colourinfo("Encoded quantifiers", False)
             semanticEncoder = SemanticsEncoder(self.model, self.solver,
                                                self.list_of_subformula,
-                                               self.dictOfReals,
-                                               self.dictOfBools,
-                                               self.dictOfInts,
+                                               self.dictOfReals, self.dictOfBools, self.dictOfInts,
                                                self.no_of_subformula,
                                                self.no_of_state_quantifier, self.no_of_stutter_quantifier,
-                                               self.stutterLength, self.stutter_state_mapping)
+                                               self.stutterLength,
+                                               self.stutter_state_mapping)
             semanticEncoder.encodeSemantics(non_quantified_property)
             common.colourinfo("Encoded non-quantified formula...", False)
             smt_end_time = time.perf_counter() - start_time
@@ -68,12 +67,11 @@ class ModelChecker:
             common.colourinfo("Encoded quantifiers", False)
             semanticEncoder = SemanticsEncoder(self.model, self.solver,
                                                self.list_of_subformula,
-                                               self.dictOfReals,
-                                               self.dictOfBools,
-                                               self.dictOfInts,
+                                               self.dictOfReals, self.dictOfBools, self.dictOfInts,
                                                self.no_of_subformula,
                                                self.no_of_state_quantifier, self.no_of_stutter_quantifier,
-                                               self.stutterLength, self.stutter_state_mapping)
+                                               self.stutterLength,
+                                               self.stutter_state_mapping)
             semanticEncoder.encodeSemantics(negated_non_quantified_property)
             common.colourinfo("Encoded non-quantified formula...", False)
             smt_end_time = time.perf_counter() - start_time
@@ -115,19 +113,28 @@ class ModelChecker:
 
     def encodeStuttering(self):
         list_over_quantifiers = []
-        for loop in range(0, self.no_of_stutter_quantifier):
+        for quantifier in range(0, self.no_of_stutter_quantifier):
             list_over_states = []
             for state in self.model.parsed_model.states:
-                list_of_equations = []
-                for stutter_length in range(0, self.stutterLength):
-                    # t_1_3 means stutter duration for state 3 and stutter quantifier 1
-                    name = "t_" + str(loop) + "_" + str(state.id)
+                list_over_actions = []
+                for action in state.actions:
+                    # list_of_equations = []
+                    # t_i_s_x means stutter duration for stutter quantifier 1 and state 3 and action x
+                    name = "t_" + str(quantifier + 1) + "_" + str(state.id) + "_" + str(action.id)
                     self.addToVariableList(name)
-                    list_of_equations.append(self.dictOfInts[name] == int(stutter_length))
-                list_over_states.append(Or([par for par in list_of_equations]))
+                    # for stutter_length in range(0, self.stutterLength):
+                    #    list_of_equations.append(self.dictOfInts[name] == int(stutter_length)) # todo unnecessary, bounds would suffice ?
+                    lower_bound = self.dictOfInts[name] >= int(0)
+                    upper_bound = self.dictOfInts[name] < int(self.stutterLength)
+                    list_over_actions.append(And(lower_bound,
+                                                 upper_bound)) # Or(list_of_equations),
+                    self.no_of_subformula += 1
+                list_over_states.append(And(list_over_actions))
                 self.no_of_subformula += 1
-            list_over_quantifiers.append(And([par for par in list_over_states]))
-        self.solver.add(And([par for par in list_over_quantifiers]))
+            list_over_quantifiers.append(And(list_over_states))
+            self.no_of_subformula += 1
+        self.solver.add(And(list_over_quantifiers))
+        self.no_of_subformula += 1
         common.colourinfo("Encoded stutter actions in the MDP...")
 
     def addToVariableList(self, name):
@@ -183,6 +190,8 @@ class ModelChecker:
             self.addToSubformulaList(right_child)
 
     def encodeStateAndStutterQuantifiers(self, combined_list_of_states_and_stutter):
+        # corresponds to Algo 5 "Truth"
+        # encode quantifiers, i.e. translate forall to And and exists to Or
         list_of_state_AV = []  # will have the OR, AND according to the quantifier in that index in the formula
         list_of_stutter_AV = []  # placeholder to manage stutter quantifier encoding
         # TODO: work to remove assumption of stutter schedulers named in order
@@ -214,27 +223,35 @@ class ModelChecker:
 
         index_of_phi = self.list_of_subformula.index(changed_hyperproperty)
 
-        combined_stutter_range = list(
-            itertools.product(list(range(self.stutterLength)), repeat=len(self.model.getListOfStates())))
+        # create all possible stutter-schedulers: assign one stutter-length to each state-action-pair
+        dict_pair_index = dict() # dictionary mapping state-action-pairs to their index in an ordered enumeration of all state-action pairs
+        i = 0
+        for state in self.model.parsed_model.states:
+            for action in state.actions:
+                #list_of_state_action_pairs.append((state.id, action.id))
+                dict_pair_index[(state.id, action.id)] = i
+                i += 1
+        possible_stutterings = list(itertools.product(list(range(self.stutterLength)), repeat=i))
+
+        # create list of preconditions for the encoding of stutter-quantifiers
         # TODO: naming of tau_i_s in algo line 5
-        list_of_tau_restrict = []
         list_of_holds = []
         list_of_precondition = []
-        for i in range(len(list_of_stutter_AV)):
-            list_of_ands = []
-            for sublist in combined_stutter_range:
-                list_of_eqs = []
-                for state in self.model.getListOfStates():
-                    name_tau = "t_" + str(i + 1) + "_" + str(state)
-                    self.addToVariableList(name_tau)
-                    list_of_eqs.append(self.dictOfInts[name_tau] == sublist[state])
-                    list_of_tau_restrict.append(self.dictOfInts[name_tau] >= int(0))
-                    list_of_tau_restrict.append(self.dictOfInts[name_tau] < int(self.stutterLength))
-                list_of_ands.append(And(list_of_eqs))
+        for i in range(len(list_of_stutter_AV)): # todo vs no_stutter_quant
+            list_over_states = []
+            for stutter_sched in possible_stutterings: # range over possible stuttering-schedulers # todo change
+                list_over_actions = []
+                for state in self.model.parsed_model.states:
+                    list_of_eqs = []
+                    for action in state.actions:
+                        name_tau = "t_" + str(i + 1) + "_" + str(state) + "_" + str(action.id)
+                        index_of_pair = dict_pair_index[(state.id, action.id)]
+                        list_of_eqs.append(self.dictOfInts[name_tau] == stutter_sched[index_of_pair])
+                    list_over_actions.append(And(list_of_eqs))
+                    self.no_of_subformula += 1
+                list_over_states.append(And(list_over_actions))
                 self.no_of_subformula += 1
-            list_of_precondition.append(list_of_ands)
-        self.solver.add(And(list_of_tau_restrict))
-        self.no_of_subformula += 1
+            list_of_precondition.append(list_over_states)
 
         # create list of holds_(s1,0)_..._0 for all state combinations
         for i in range(len(combined_list_of_states_and_stutter)):
@@ -245,7 +262,7 @@ class ModelChecker:
             self.addToVariableList(name)
             list_of_holds.append(self.dictOfBools[name])
 
-        # encode stutter scheduler quantifiers
+        # encode stutter scheduler quantifiers (for each possible assignment of the state variables)
         stutter_encoding_i = []
         # TODO: there has to be a change here
         stutter_encoding_ipo = list_of_holds
@@ -254,13 +271,12 @@ class ModelChecker:
                 list_of_precond = list_of_precondition[quant - 1]  # indexed starting from 0
                 postcond = self.fetch_value(stutter_encoding_ipo, state_tuple)
                 if list_of_stutter_AV[quant - 1] == 'AT':
-                    encoding = And([Implies(list_of_precond[i], postcond) for i in range(len(combined_stutter_range))])
+                    encoding = And([Implies(list_of_precond[i], postcond) for i in range(len(possible_stutterings))])
                 elif list_of_stutter_AV[quant - 1] == 'VT':
-                    encoding = Or([And(list_of_precond[i], postcond) for i in range(len(combined_stutter_range))])
+                    encoding = Or([And(list_of_precond[i], postcond) for i in range(len(possible_stutterings))])
                 stutter_encoding_i.append(encoding)
                 self.no_of_subformula += 1
                 # TODO as how many subformulas should this count?
-            # print(stutter_encoding_i[0])
             stutter_encoding_ipo.clear()
             stutter_encoding_ipo = copy.deepcopy(stutter_encoding_i)
             stutter_encoding_i.clear()
@@ -287,6 +303,7 @@ class ModelChecker:
             state_encoding_ipo = copy.deepcopy(state_encoding_i)
             state_encoding_i.clear()
         # the formula can now be accessed via state_encoding_ipo[0]
+        #print(state_encoding_ipo[0])
         self.solver.add(state_encoding_ipo[0])
 
     def checkResult(self):
@@ -295,9 +312,10 @@ class ModelChecker:
         z3_time = time.perf_counter() - starting_time
         list_of_actions = None
         set_of_holds = set()
+        stuttersched_assignments = []
         if truth == sat:
             z3model = self.solver.model()
-            list_of_actions = [None] * len(set(itertools.chain.from_iterable(self.model.getDictOfActions().values())))
+            list_of_actions = [None] * self.model.getNumberOfActions()
             for li in z3model:
                 if li.name()[0] == 'h' and li.name()[-1] == '0' and z3model[li]:
                     state_tuple_str = li.name()[6:-2]
@@ -305,37 +323,41 @@ class ModelChecker:
                     set_of_holds.add(tuple(state_tuple_list))
                 if li.name()[0] == 'a' and len(li.name()) == 3:
                     list_of_actions[int(li.name()[2:])] = z3model[li]
-                # todo also output stuttering choices?
+                if li.name()[0] == 't':
+                    stuttersched_assignments.append((li.name(),z3model[li]))
         if truth.r == 1:
-            return True, list_of_actions, set_of_holds, self.solver.statistics(), z3_time
+            return True, list_of_actions, set_of_holds, stuttersched_assignments, self.solver.statistics(), z3_time
         elif truth.r == -1:
-            return False, list_of_actions, set_of_holds, self.solver.statistics(), z3_time
+            return False, list_of_actions, set_of_holds, stuttersched_assignments, self.solver.statistics(), z3_time
 
     def printResult(self, smt_end_time, scheduler_quantifier):
-        # todo add variable assignments ?
-        # todo add stuttering decisions?
         common.colourinfo("Checking...", False)
-        smt_result, actions, holds, statistics, z3_time = self.checkResult()
+        smt_result, actions, holds, stuttersched_assignments, statistics, z3_time = self.checkResult()
         if scheduler_quantifier == 'exists':
             if smt_result:
+                # todo adjust to more fine-grained output depending on different quantifier combinations?
                 common.colouroutput("The property HOLDS!")
                 print("\nThe values of variables of the witness are:")
-                print("\nThe following state variable assignments satisfy the property (tuples ordered by stutter quantification):") #todo order of quantification? order of stutterquant ??
-                print(holds) # for each assignment: state associated with first stutter-sched var is listed first, and so on
                 print("\nIf both actions are available at a state:")
                 for i in range(0, len(actions)):
                     common.colouroutput("Choose action " + str(i) + " with probability " + str(actions[i]), False)
+                print("\nThe following state variable assignments satisfy the property (tuples ordered by stutter quantification):")  # todo order of quantification? order of stutterquant ??
+                print(holds)  # for each assignment: state associated with first stutter-sched var is listed first, and so on
+                print("\nChoose stutterscheduler as follows:")
+                print(stuttersched_assignments) # todo print nicer
             else:
                 common.colourerror("The property DOES NOT hold!")
         elif scheduler_quantifier == 'forall':
             if smt_result:
                 common.colourerror("The property DOES NOT hold!")
                 print("\nThe values of variables of a counterexample are:")
-                print("\nThe following state variable assignments do not satisfy the property (tuples ordered by stutter quantification):")  # todo order of quantification? order of stutterquant ??
-                print(holds)  # for each assignment: state associated with first stutter-sched var is listed first, and so on
                 print("\nIf both actions are available at a state:")
                 for i in range(0, len(actions)):
                     common.colouroutput("Choose action " + str(i) + " with probability " + str(actions[i]), False)
+                print("\nThe following state variable assignments do not satisfy the property (tuples ordered by stutter quantification):")  # todo order of quantification? order of stutterquant ??
+                print(holds)  # for each assignment: state associated with first stutter-sched var is listed first, and so on
+                print("\nChoose stutterscheduler as follows:")
+                print(stuttersched_assignments)  # todo print nicer
             else:
                 common.colouroutput("The property HOLDS!")
         common.colourinfo("\nTime to encode in seconds: " + str(round(smt_end_time, 2)), False)

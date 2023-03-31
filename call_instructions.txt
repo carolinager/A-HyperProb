@@ -107,3 +107,12 @@ Documents/Research/HyperProbV2/benchmark/test/mdp.nm
 "ES sh . E s1 . ET t1 (s1). (P(true U[1,4] le1(t1)) = 0 )"
 -stutterLength
 1
+
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . E s2 . ET t1 (s1). ET t2 (s2) . ((le1(t2) & hg0(t1)) & (P(X hg0(t1)) = 0.5 ))"
+-stutterLength
+2
+// satisfied for state assignments {('0', '4'), ('0', '2')}
+// Choose action 0 with probability 1/2; Choose action 1 with probability 1/2
