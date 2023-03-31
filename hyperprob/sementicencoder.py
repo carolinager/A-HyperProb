@@ -882,12 +882,13 @@ class SemanticsEncoder:
             par = copy.deepcopy(k_2)
             par.value = str(int(k_2.value) - 1)  # k2.value will have changed value but it won't show up in the formula
             # tree, hence it'll appear to be the same formula as formula_duplicate
-            hyperproperty.children[0].children[
+            hyperproperty_new = copy.deepcopy(hyperproperty)
+            hyperproperty_new.children[0].children[
                 2] = par  # so now formula_duplicate is basically phi1_until[0,k2-1]_phi2. Don't be confused!!
-            self.list_of_subformula.append(hyperproperty)
+            self.list_of_subformula.append(hyperproperty_new)
             index_of_replaced = len(
                 self.list_of_subformula) - 1  # forcefully inserting new replaced formula, will obviously be inserted at the end
-            rel_quant, rel_quant1, rel_quant2 = self.encodeBoundedUntilSemantics(hyperproperty)
+            rel_quant, rel_quant1, rel_quant2 = self.encodeBoundedUntilSemantics(hyperproperty_new)
             relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
             # TODO isnt it unnecessary to add them again since we already added the quantifiers in the base case
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
@@ -993,13 +994,14 @@ class SemanticsEncoder:
             par2 = copy.deepcopy(k_2)
             par1.value = str(int(k_1.value) - 1)
             par2.value = str(int(k_2.value) - 1)
-            hyperproperty.children[0].children[
+            hyperproperty_new = copy.deepcopy(hyperproperty)
+            hyperproperty_new.children[0].children[
                 1] = par1  # so now formula_duplicate is basically phi1_until[k1-1,k2-1]_phi2 Don't be confused!!
-            hyperproperty.children[0].children[2] = par2
-            self.list_of_subformula.append(hyperproperty)
+            hyperproperty_new.children[0].children[2] = par2
+            self.list_of_subformula.append(hyperproperty_new)
             index_of_replaced = len(
                 self.list_of_subformula) - 1  # forcefully inserting new replaced formula, will obviously be inserted at the end
-            rel_quant, rel_quant1, rel_quant2 = self.encodeBoundedUntilSemantics(hyperproperty)
+            rel_quant, rel_quant1, rel_quant2 = self.encodeBoundedUntilSemantics(hyperproperty_new)
             relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             # rel_quant1 = int(str(hyperproperty.children[0].children[0].children[1].children[0])[1:])
