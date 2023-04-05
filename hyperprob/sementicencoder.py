@@ -644,9 +644,14 @@ class SemanticsEncoder:
                 And(self.dictOfReals[holdsToInt1] == float(0),
                     Not(self.dictOfBools[holds1])))
             self.no_of_subformula += 3
+            #new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
+            #new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+            #self.solver.add(And(first_and, new_prob_const_1, new_prob_const_0))
             self.solver.add(first_and)
 
-            # create list of all possible actions & list of all possible action-dependendt stutterings for r_state
+
+
+            # create list of all possible actions & list of all possible action-dependent stutterings for r_state
             dicts_act = []
             stutters_for_actions = []
             for l in range(len(relevant_quantifier)):

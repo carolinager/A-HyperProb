@@ -209,7 +209,7 @@ def checkStutterQuantifiers(hyperproperty, state_indices):
             raise ValueError(f"State s{i} is not associated with a stutter-scheduler")
     # extra TODO: add handling for missing stutter quantifiers (for all state, no stuttering)
     # check all quantified stutter-sched variables are named correctly and occur in the correct order
-    if list(range(1,len(variable_indices)+1)) != variable_indices:
+    if list(range(1, len(variable_indices)+1)) != variable_indices:
         raise ValueError("The stutter variables are not named t1, ..., tn (or are not quantified in this order).")
     # check that all quantified stutter-vars are used:
     rel_quant = set() # set of stutter quantifiers occurring in the formula

@@ -1,9 +1,8 @@
 import copy
 import time
 import itertools
-import re
 
-from lark import Tree, Token
+from lark import Tree
 from z3 import Solver, Bool, Real, Int, Or, sat, And, Implies, RealVal, Sum
 
 from hyperprob.utility import common
@@ -84,8 +83,9 @@ class ModelChecker:
             raise ValueError(f"Model contains more than 2 different actions.")
         scheduler_restrictions = []
         sum_over_probs = []
+
         for action in set_of_actions:
-            name = "a_" + str(action) # a_x is probability of action x
+            name = "a_" + str(action)  # a_x is probability of action x
             self.addToVariableList(name)
             scheduler_restrictions.append(self.dictOfReals[name] >= 0)
             scheduler_restrictions.append(self.dictOfReals[name] <= 1)
@@ -93,20 +93,26 @@ class ModelChecker:
         scheduler_restrictions.append(Sum(sum_over_probs) == 1)
         self.solver.add(And(scheduler_restrictions))
         self.no_of_subformula += 1
+
         # encode scheduler probabilities for each state
         state_scheduler_probs = []
         for state in self.model.parsed_model.states:
-            name = "a_" + str(state.id) + "_" # a_s_x is probability of action x in state s
+            name = "a_" + str(state.id) + "_"  # a_s_x is probability of action x in state s
             available_actions = list(state.actions)
             if len(available_actions) == 1:
                 name += str(available_actions[0].id)
                 self.addToVariableList(name)
-                state_scheduler_probs.append(self.dictOfReals[name] == 1) # todo float(1) ??
+                state_scheduler_probs.append(self.dictOfReals[name] == 1)  # todo float(1) ??
             elif len(available_actions) == 2:
+                #sum_over_probs = []
                 for action in available_actions:
                     name_x = name + str(action.id)
                     self.addToVariableList(name_x)
                     state_scheduler_probs.append(self.dictOfReals[name_x] == self.dictOfReals["a_" + str(action.id)])
+                    # state_scheduler_probs.append(self.dictOfReals[name_x] >= 0)
+                    # state_scheduler_probs.append(self.dictOfReals[name_x] <= 1)
+                    #sum_over_probs.append(self.dictOfReals[name_x])
+                #state_scheduler_probs.append(Sum(sum_over_probs) == 1)
         self.solver.add(And(state_scheduler_probs))
         self.no_of_subformula += 1
         common.colourinfo("Encoded actions in the MDP...")
@@ -119,7 +125,7 @@ class ModelChecker:
                 list_over_actions = []
                 for action in state.actions:
                     # list_of_equations = []
-                    # t_i_s_x means stutter duration for stutter quantifier 1 and state 3 and action x
+                    # t_i_s_x means stutter duration for stutter quantifier i and state s and action x
                     name = "t_" + str(quantifier + 1) + "_" + str(state.id) + "_" + str(action.id)
                     self.addToVariableList(name)
                     # for stutter_length in range(0, self.stutterLength):
@@ -127,7 +133,7 @@ class ModelChecker:
                     lower_bound = self.dictOfInts[name] >= int(0)
                     upper_bound = self.dictOfInts[name] < int(self.stutterLength)
                     list_over_actions.append(And(lower_bound,
-                                                 upper_bound)) # Or(list_of_equations),
+                                                 upper_bound))  # Or(list_of_equations),
                     self.no_of_subformula += 1
                 list_over_states.append(And(list_over_actions))
                 self.no_of_subformula += 1
@@ -138,11 +144,11 @@ class ModelChecker:
         common.colourinfo("Encoded stutter actions in the MDP...")
 
     def addToVariableList(self, name):
-        if name[0] == 'h' and not name.startswith('holdsToInt'): # holds_
+        if name[0] == 'h' and not name.startswith('holdsToInt'):  # holds_
             self.dictOfBools[name] = Bool(name)
-        elif (name[0] in ['p', 'd', 'r', 'a', 's'] or name.startswith('holdsToInt')): # prob_, d_, rew_, a_s, sigma_a
+        elif name[0] in ['p', 'd', 'r', 'a', 's'] or name.startswith('holdsToInt'):  # prob_, d_, rew_, a_s, sigma_a
             self.dictOfReals[name] = Real(name)
-        elif name[0] in ['t']: # t_
+        elif name[0] in ['t']:  # t_
             self.dictOfInts[name] = Int(name)
 
     def addToSubformulaList(self, formula_phi):  # add as you go any new subformula part as needed
@@ -219,16 +225,16 @@ class ModelChecker:
                 changed_hyperproperty = changed_hyperproperty.children[0]
             else:
                 break
-        # TODO: read and track relevant quantifiers
+        # TODO: read and track relevant quantifiers ->  Done in a way
 
         index_of_phi = self.list_of_subformula.index(changed_hyperproperty)
 
         # create all possible stutter-schedulers: assign one stutter-length to each state-action-pair
-        dict_pair_index = dict() # dictionary mapping state-action-pairs to their index in an ordered enumeration of all state-action pairs
+        dict_pair_index = dict()  # dictionary mapping state-action-pairs to their index in an ordered enumeration of all state-action pairs
         i = 0
         for state in self.model.parsed_model.states:
             for action in state.actions:
-                #list_of_state_action_pairs.append((state.id, action.id))
+                # list_of_state_action_pairs.append((state.id, action.id))
                 dict_pair_index[(state.id, action.id)] = i
                 i += 1
         possible_stutterings = list(itertools.product(list(range(self.stutterLength)), repeat=i))
@@ -237,9 +243,9 @@ class ModelChecker:
         # TODO: naming of tau_i_s in algo line 5
         list_of_holds = []
         list_of_precondition = []
-        for i in range(len(list_of_stutter_AV)): # todo vs no_stutter_quant
+        for i in range(len(list_of_stutter_AV)):  # todo vs no_stutter_quant
             list_over_states = []
-            for stutter_sched in possible_stutterings: # range over possible stuttering-schedulers # todo change
+            for stutter_sched in possible_stutterings:  # range over possible stuttering-schedulers # todo change
                 list_over_actions = []
                 for state in self.model.parsed_model.states:
                     list_of_eqs = []
@@ -267,11 +273,12 @@ class ModelChecker:
         # TODO: there has to be a change here
         stutter_encoding_ipo = list_of_holds
         for quant in range(self.no_of_stutter_quantifier, 0, -1):  # n, ..., 1
-            for state_tuple in itertools.product(self.model.getListOfStates(), repeat=len(self.stutter_state_mapping.keys())):
+            for state_tuple in itertools.product(self.model.getListOfStates(),
+                                                 repeat=len(self.stutter_state_mapping.keys())):
                 list_of_precond = list_of_precondition[quant - 1]  # indexed starting from 0
                 postcond = self.fetch_value(stutter_encoding_ipo, state_tuple)
                 if list_of_stutter_AV[quant - 1] == 'AT':
-                    encoding = And([Implies(list_of_precond[i], postcond) for i in range(len(possible_stutterings))])
+                    encoding = And([And(list_of_precond[i], postcond) for i in range(len(possible_stutterings))])   # changed implies to and to force all stutterings to be true
                 elif list_of_stutter_AV[quant - 1] == 'VT':
                     encoding = Or([And(list_of_precond[i], postcond) for i in range(len(possible_stutterings))])
                 stutter_encoding_i.append(encoding)
@@ -303,7 +310,7 @@ class ModelChecker:
             state_encoding_ipo = copy.deepcopy(state_encoding_i)
             state_encoding_i.clear()
         # the formula can now be accessed via state_encoding_ipo[0]
-        #print(state_encoding_ipo[0])
+        # print(state_encoding_ipo[0])
         self.solver.add(state_encoding_ipo[0])
 
     def checkResult(self):
@@ -319,12 +326,12 @@ class ModelChecker:
             for li in z3model:
                 if li.name()[0] == 'h' and li.name()[-1] == '0' and z3model[li]:
                     state_tuple_str = li.name()[6:-2]
-                    state_tuple_list = [state_tuple_str[i*6 + (i+1)] for i in range(self.no_of_stutter_quantifier)]
+                    state_tuple_list = [state_tuple_str[i * 6 + (i + 1)] for i in range(self.no_of_stutter_quantifier)]
                     set_of_holds.add(tuple(state_tuple_list))
                 if li.name()[0] == 'a' and len(li.name()) == 3:
                     list_of_actions[int(li.name()[2:])] = z3model[li]
                 if li.name()[0] == 't':
-                    stuttersched_assignments.append((li.name(),z3model[li]))
+                    stuttersched_assignments.append((li.name(), z3model[li]))
         if truth.r == 1:
             return True, list_of_actions, set_of_holds, stuttersched_assignments, self.solver.statistics(), z3_time
         elif truth.r == -1:
@@ -341,10 +348,12 @@ class ModelChecker:
                 print("\nIf both actions are available at a state:")
                 for i in range(0, len(actions)):
                     common.colouroutput("Choose action " + str(i) + " with probability " + str(actions[i]), False)
-                print("\nThe following state variable assignments satisfy the property (tuples ordered by stutter quantification):")  # todo order of quantification? order of stutterquant ??
-                print(holds)  # for each assignment: state associated with first stutter-sched var is listed first, and so on
+                print(
+                    "\nThe following state variable assignments satisfy the property (tuples ordered by stutter quantification):")  # todo order of quantification? order of stutterquant ??
+                print(
+                    holds)  # for each assignment: state associated with first stutter-sched var is listed first, and so on
                 print("\nChoose stutterscheduler as follows:")
-                print(stuttersched_assignments) # todo print nicer
+                print(stuttersched_assignments)  # todo print nicer
             else:
                 common.colourerror("The property DOES NOT hold!")
         elif scheduler_quantifier == 'forall':
@@ -354,8 +363,10 @@ class ModelChecker:
                 print("\nIf both actions are available at a state:")
                 for i in range(0, len(actions)):
                     common.colouroutput("Choose action " + str(i) + " with probability " + str(actions[i]), False)
-                print("\nThe following state variable assignments do not satisfy the property (tuples ordered by stutter quantification):")  # todo order of quantification? order of stutterquant ??
-                print(holds)  # for each assignment: state associated with first stutter-sched var is listed first, and so on
+                print(
+                    "\nThe following state variable assignments do not satisfy the property (tuples ordered by stutter quantification):")  # todo order of quantification? order of stutterquant ??
+                print(
+                    holds)  # for each assignment: state associated with first stutter-sched var is listed first, and so on
                 print("\nChoose stutterscheduler as follows:")
                 print(stuttersched_assignments)  # todo print nicer
             else:
