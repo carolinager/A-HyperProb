@@ -561,9 +561,9 @@ class SemanticsEncoder:
 
     def addToVariableList(self, name):
         # TODO reuse method in modelchecker
-        if name[0] == 'h' and not name.startswith('holdsToInt'): # and name not in self.dictOfBools.keys():
+        if name[0] == 'h' and not name.startswith('holdsToInt'):  # and name not in self.dictOfBools.keys():
             self.dictOfBools[name] = Bool(name)
-        elif (name[0] in ['p', 'd', 'r'] or name.startswith('holdsToInt')): # and name not in self.dictOfReals.keys():
+        elif (name[0] in ['p', 'd', 'r'] or name.startswith('holdsToInt')):  # and name not in self.dictOfReals.keys():
             self.dictOfReals[name] = Real(name)
         elif name[0] in ['a', 't']:
             self.dictOfInts[name] = Int(name)
@@ -604,17 +604,17 @@ class SemanticsEncoder:
         # returns: list with entries ["successor state", "probability of reaching that state"]
         dicts = []
         for l in range(len(relevant_quantifier)):
-            if h_tuple[l][ca[l]] == r_state[relevant_quantifier[l]-1][1]:
+            if h_tuple[l][ca[l]] == r_state[relevant_quantifier[l] - 1][1]:
                 succ = (
-                    self.model.dict_of_acts_tran[str(r_state[relevant_quantifier[l]-1][0]) + " " + str(ca[l])])
+                    self.model.dict_of_acts_tran[str(r_state[relevant_quantifier[l] - 1][0]) + " " + str(ca[l])])
                 list_of_all_succ = []
                 for s in succ:
                     space = s.find(' ')
                     succ_state = (int(s[0:space]), 0)
                     list_of_all_succ.append([str(succ_state), s[space + 1:]])
-            else: # if r_state[relevant_quantifier[l]-1][1] < h_tuple[l][ca[l]]
-                list_of_all_succ = [[str((r_state[relevant_quantifier[l]-1][0],
-                                          r_state[relevant_quantifier[l]-1][1] + 1)),
+            else:  # if r_state[relevant_quantifier[l]-1][1] < h_tuple[l][ca[l]]
+                list_of_all_succ = [[str((r_state[relevant_quantifier[l] - 1][0],
+                                          r_state[relevant_quantifier[l] - 1][1] + 1)),
                                      str(1)]]
             dicts.append(list_of_all_succ)
         return list(itertools.product(*dicts))
@@ -644,20 +644,19 @@ class SemanticsEncoder:
                 And(self.dictOfReals[holdsToInt1] == float(0),
                     Not(self.dictOfBools[holds1])))
             self.no_of_subformula += 3
-            #new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
-            #new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
-            #self.solver.add(And(first_and, new_prob_const_1, new_prob_const_0))
+            # new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
+            # new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+            # self.solver.add(And(first_and, new_prob_const_1, new_prob_const_0))
             self.solver.add(first_and)
-
-
 
             # create list of all possible actions & list of all possible action-dependent stutterings for r_state
             dicts_act = []
             stutters_for_actions = []
             for l in range(len(relevant_quantifier)):
-                dicts_act.append(self.model.dict_of_acts[r_state[relevant_quantifier[l]-1][0]])
-                stutters_for_actions.append(list(itertools.product(list(range(r_state[relevant_quantifier[l]-1][1], self.stutterLength)),
-                                                      repeat=len(dicts_act[-1]))))
+                dicts_act.append(self.model.dict_of_acts[r_state[relevant_quantifier[l] - 1][0]])
+                stutters_for_actions.append(
+                    list(itertools.product(list(range(r_state[relevant_quantifier[l] - 1][1], self.stutterLength)),
+                                           repeat=len(dicts_act[-1]))))
             combined_acts = list(itertools.product(*dicts_act))
             # combined_stutter is a list of tuples which have one entry for each state in r_state
             # these entries are tuples with one stuttering-length for each action available at the state
@@ -668,9 +667,9 @@ class SemanticsEncoder:
                 # precondition: stutter variables are assigned the values in h_tuple
                 precond_list = []
                 for l in range(len(relevant_quantifier)):
-                    for action in self.model.dict_of_acts[r_state[relevant_quantifier[l]-1][0]]:
+                    for action in self.model.dict_of_acts[r_state[relevant_quantifier[l] - 1][0]]:
                         stu_name = 't_' + str(relevant_quantifier[l]) + '_' + \
-                                   str(r_state[relevant_quantifier[l]-1][0]) + '_' + str(action)
+                                   str(r_state[relevant_quantifier[l] - 1][0]) + '_' + str(action)
                         precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l][action]))
                 implies_precedent = And(precond_list)
                 self.no_of_subformula += 1
@@ -691,9 +690,10 @@ class SemanticsEncoder:
                                 l_index = relevant_quantifier.index(l)
                                 succ_state = cs[l_index][0]
                                 holdsToInt_succ += '_' + succ_state
-                                product *= RealVal(cs[l_index][1]).as_fraction() # transition probability in the DTMC induced by the currently chosen stuttering
+                                product *= RealVal(cs[l_index][
+                                                       1]).as_fraction()  # transition probability in the DTMC induced by the currently chosen stuttering
                                 product *= self.dictOfReals[
-                                    "a_" + str(r_state[l-1][0]) + "_" + str(ca[l_index])]
+                                    "a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                             else:
                                 holdsToInt_succ += '_' + str((0, 0))
 
@@ -764,7 +764,7 @@ class SemanticsEncoder:
             dicts_act = []
             stutters_for_actions = []
             for l in range(len(relevant_quantifier)):
-                dicts_act.append(self.model.dict_of_acts[r_state[relevant_quantifier[l]-1][0]])
+                dicts_act.append(self.model.dict_of_acts[r_state[relevant_quantifier[l] - 1][0]])
                 stutters_for_actions.append(
                     list(itertools.product(list(range(r_state[relevant_quantifier[l] - 1][1], self.stutterLength)),
                                            repeat=len(dicts_act[-1]))))
@@ -781,7 +781,7 @@ class SemanticsEncoder:
                     for action in self.model.dict_of_acts[r_state[relevant_quantifier[l] - 1][0]]:
                         stu_name = 't_' + str(relevant_quantifier[l]) + '_' + \
                                    str(r_state[relevant_quantifier[l] - 1][0]) + '_' + str(action)
-                    precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l][action]))
+                        precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l][action]))
                 implies_precedent = And(self.dictOfBools[holds1],
                                         Not(self.dictOfBools[holds2]),
                                         And(precond_list))
@@ -811,8 +811,8 @@ class SemanticsEncoder:
                                 holds_succ += '_' + succ_state
                                 d_succ += '_' + succ_state
                                 product *= RealVal(cs[l_index][1]).as_fraction()
-                                product *= self.dictOfReals["a_" + str(r_state[l-1][0]) + "_" + str(ca[l_index])]
-                                sched_prob *= self.dictOfReals["a_" + str(r_state[l-1][0]) + "_" + str(ca[l_index])]
+                                product *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
+                                sched_prob *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                             else:
                                 prob_succ += '_' + str((0, 0))
                                 holds_succ += '_' + str((0, 0))
@@ -904,7 +904,8 @@ class SemanticsEncoder:
                 self.list_of_subformula) - 1  # forcefully inserting new replaced formula, will obviously be inserted at the end
             rel_quant, rel_quant1, rel_quant2 = self.encodeBoundedUntilSemantics(hyperproperty_new)
             relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
-            # TODO isnt it unnecessary to add them again since we already added the quantifiers in the base case
+            # TODO isnt it unnecessary to add them again since we already added the quantifiers in the base case.
+            # OD: Makes sense, but I keopt this for the cases where the bounds are [0,3], then this is the first case it hits.
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
             # rel_quant1 = int(str(hyperproperty.children[0].children[0].children[1].children[0])[1:])
             # rel_quant2 = int(str(hyperproperty.children[0].children[3].children[1].children[0])[1:])
@@ -948,22 +949,24 @@ class SemanticsEncoder:
 
                 # create list of all possible stutterings and list of all possible actions for r_state
                 dicts_act = []
-                dicts_stutter = []
+                stutters_for_actions = []
                 for l in relevant_quantifier:
-                    dicts_act.append(self.model.dict_of_acts[r_state[l - 1][0]])
-                    dicts_stutter.append(list(range(r_state[l-1][1],self.stutterLength)))
+                    dicts_act.append(self.model.dict_of_acts[r_state[relevant_quantifier[l] - 1][0]])
+                    stutters_for_actions.append(
+                        list(itertools.product(list(range(r_state[relevant_quantifier[l] - 1][1], self.stutterLength)),
+                                               repeat=len(dicts_act[-1]))))
                 combined_acts = list(itertools.product(*dicts_act))
-                combined_stutters = list(itertools.product(*dicts_stutter))
+                combined_stutters = list(itertools.product(*stutters_for_actions))
 
                 # encode probability calculation
                 for h_tuple in combined_stutters:
                     # precondition: stutter variables are assigned the values in h_tuple, phi1 holds, phi2 doesnt hold
                     precond_list = []
                     for l in range(len(relevant_quantifier)):
-                        stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
-                            r_state[relevant_quantifier[l] - 1][0])
-                        # self.addToVariableList(stu_name)
-                        precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l]))
+                        for action in self.model.dict_of_acts[r_state[relevant_quantifier[l] - 1][0]]:
+                            stu_name = 't_' + str(relevant_quantifier[l]) + '_' + \
+                                       str(r_state[relevant_quantifier[l] - 1][0]) + '_' + str(action)
+                            precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l][action]))
                     implies_precedent = And(self.dictOfBools[holds1],
                                             Not(self.dictOfBools[holds2]),
                                             And(precond_list))
@@ -986,7 +989,7 @@ class SemanticsEncoder:
                                     succ_state = cs[l_index][0]
                                     prob_succ += '_' + succ_state
                                     product *= RealVal(cs[l_index][1]).as_fraction()
-                                    product *= self.dictOfReals["a_" + str(r_state[l-1][0]) + "_" + str(ca[l_index])]
+                                    product *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                                 else:
                                     prob_succ += '_' + str((0, 0))
 
@@ -1041,7 +1044,7 @@ class SemanticsEncoder:
                 new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
 
                 first_implies = And(Implies(Not(self.dictOfBools[holds1]),
-                                        (self.dictOfReals[prob_phi] == float(0))),
+                                            (self.dictOfReals[prob_phi] == float(0))),
                                     new_prob_const_0,
                                     new_prob_const_1)
                 self.solver.add(first_implies)
@@ -1049,22 +1052,24 @@ class SemanticsEncoder:
 
                 # create list of all possible stutterings and list of all possible actions for r_state
                 dicts_act = []
-                dicts_stutter = []
-                for l in relevant_quantifier:
-                    dicts_act.append(self.model.dict_of_acts[r_state[l - 1][0]])
-                    dicts_stutter.append(list(range(r_state[l-1][1],self.stutterLength)))
+                stutters_for_action = []
+                for l in range(len(relevant_quantifier)):
+                    dicts_act.append(self.model.dict_of_acts[r_state[relevant_quantifier[l] - 1][0]])
+                    stutters_for_action.append(
+                        list(itertools.product(list(range(r_state[relevant_quantifier[l] - 1][1], self.stutterLength)),
+                                               repeat=len(dicts_act[-1]))))
                 combined_acts = list(itertools.product(*dicts_act))
-                combined_stutters = list(itertools.product(*dicts_stutter))
+                combined_stutters = list(itertools.product(*stutters_for_action))
 
                 # encode probability calculation
                 for h_tuple in combined_stutters:
                     # precondition: stutter variables are assigned the values in h_tuple, phi1 holds
                     precond_list = []
                     for l in range(len(relevant_quantifier)):
-                        stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
-                            r_state[relevant_quantifier[l] - 1][0])
-                        # self.addToVariableList(stu_name)
-                        precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l]))
+                        for action in self.model.dict_of_acts[r_state[relevant_quantifier[l] - 1][0]]:
+                            stu_name = 't_' + str(relevant_quantifier[l]) + '_' + \
+                                       str(r_state[relevant_quantifier[l] - 1][0]) + '_' + str(action)
+                            precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l][action]))
                     implies_precedent = And(self.dictOfBools[holds1],
                                             And(precond_list))
                     self.no_of_subformula += 2
@@ -1087,7 +1092,7 @@ class SemanticsEncoder:
                                     prob_succ += '_' + succ_state
                                     product *= RealVal(cs[l_index][1]).as_fraction()
                                     product *= self.dictOfReals[
-                                        "a_" + str(r_state[l-1][0]) + "_" + str(ca[l_index])]
+                                        "a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                                 else:
                                     prob_succ += '_' + str((0, 0))
 
@@ -1135,22 +1140,24 @@ class SemanticsEncoder:
 
             # create list of all possible stutterings and list of all possible actions for r_state
             dicts_act = []
-            dicts_stutter = []
-            for l in relevant_quantifier:
-                dicts_act.append(self.model.dict_of_acts[r_state[l - 1][0]])
-                dicts_stutter.append(list(range(r_state[l-1][1],self.stutterLength)))
+            stutters_for_actions = []
+            for l in range(len(relevant_quantifier)):
+                dicts_act.append(self.model.dict_of_acts[r_state[relevant_quantifier[l] - 1][0]])
+                stutters_for_actions.append(
+                    list(itertools.product(list(range(r_state[relevant_quantifier[l] - 1][1], self.stutterLength)),
+                                           repeat=len(dicts_act[-1]))))
             combined_acts = list(itertools.product(*dicts_act))
-            combined_stutters = list(itertools.product(*dicts_stutter))
+            combined_stutters = list(itertools.product(*stutters_for_actions))
 
             # encode probability calculation
             for h_tuple in combined_stutters:
                 # precondition: stutter variables are assigned the values in h_tuple, phi1 doesnt hold
                 precond_list = []
                 for l in range(len(relevant_quantifier)):
-                    stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
-                        r_state[relevant_quantifier[l] - 1][0])
-                    # self.addToVariableList(stu_name)
-                    precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l]))
+                    for action in self.model.dict_of_acts[r_state[relevant_quantifier[l] - 1][0]]:
+                        stu_name = 't_' + str(relevant_quantifier[l]) + '_' + \
+                                   str(r_state[relevant_quantifier[l] - 1][0]) + '_' + str(action)
+                        precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l][action]))
                 implies_precedent = And(Not(self.dictOfBools[holds1]),
                                         And(precond_list))
                 self.no_of_subformula += 2
@@ -1179,8 +1186,8 @@ class SemanticsEncoder:
                                 holds_succ += '_' + succ_state
                                 d_succ += '_' + succ_state
                                 product *= RealVal(cs[l_index][1]).as_fraction()
-                                product *= self.dictOfReals["a_" + str(r_state[l-1][0]) + "_" + str(ca[l_index])]
-                                sched_prob *= self.dictOfReals["a_" + str(r_state[l-1][0]) + "_" + str(ca[l_index])]
+                                product *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
+                                sched_prob *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                             else:
                                 prob_succ += '_' + str((0, 0))
                                 holds_succ += '_' + str((0, 0))
@@ -1247,22 +1254,24 @@ class SemanticsEncoder:
 
             # create list of all possible stutterings and list of all possible actions for r_state
             dicts_act = []
-            dicts_stutter = []
-            for l in relevant_quantifier:
+            stutters_for_actions = []
+            for l in range(len(relevant_quantifier)):
                 dicts_act.append(self.model.dict_of_acts[r_state[l - 1][0]])
-                dicts_stutter.append(list(range(r_state[l-1][1],self.stutterLength))) # only consider stutterlength, with which the current state is reachable
+                stutters_for_actions.append(
+                    list(itertools.product(list(range(r_state[relevant_quantifier[l] - 1][1], self.stutterLength)),
+                                           repeat=len(dicts_act[-1]))))
             combined_acts = list(itertools.product(*dicts_act))
-            combined_stutters = list(itertools.product(*dicts_stutter))
+            combined_stutters = list(itertools.product(*stutters_for_actions))
 
             # encode probability calculation
             for h_tuple in combined_stutters:
                 # precondition: stutter variables are assigned the values in h_tuple, phi1 doesnt hold
                 precond_list = []
                 for l in range(len(relevant_quantifier)):
-                    stu_name = 't_' + str(relevant_quantifier[l]) + '_' + str(
-                        r_state[relevant_quantifier[l] - 1][0])
-                    # self.addToVariableList(stu_name)
-                    precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l]))
+                    for action in self.model.dict_of_acts[r_state[relevant_quantifier[l] - 1][0]]:
+                        stu_name = 't_' + str(relevant_quantifier[l]) + '_' + \
+                                   str(r_state[relevant_quantifier[l] - 1][0]) + '_' + str(action)
+                        precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l][action]))
                 implies_precedent = And(self.dictOfBools[holds1],
                                         And(precond_list))
                 self.no_of_subformula += 2
@@ -1291,8 +1300,8 @@ class SemanticsEncoder:
                                 holds_succ += '_' + succ_state
                                 d_succ += '_' + succ_state
                                 product *= RealVal(cs[l_index][1]).as_fraction()
-                                product *= self.dictOfReals["a_" + str(r_state[l-1][0]) + "_" + str(ca[l_index])]
-                                sched_prob *= self.dictOfReals["a_" + str(r_state[l-1][0]) + "_" + str(ca[l_index])]
+                                product *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
+                                sched_prob *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                             else:
                                 prob_succ += '_' + str((0, 0))
                                 holds_succ += '_' + str((0, 0))
