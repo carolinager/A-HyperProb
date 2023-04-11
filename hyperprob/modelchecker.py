@@ -278,7 +278,7 @@ class ModelChecker:
                 list_of_precond = list_of_precondition[quant - 1]  # indexed starting from 0
                 postcond = self.fetch_value(stutter_encoding_ipo, state_tuple)
                 if list_of_stutter_AV[quant - 1] == 'AT':
-                    encoding = And([And(list_of_precond[i], postcond) for i in range(len(possible_stutterings))])   # changed implies to and to force all stutterings to be true
+                    encoding = And([Implies(list_of_precond[i], postcond) for i in range(len(possible_stutterings))])   # changing "implies" to "and" to force all stutterings to be true will yield an unsatisfiable formula
                 elif list_of_stutter_AV[quant - 1] == 'VT':
                     encoding = Or([And(list_of_precond[i], postcond) for i in range(len(possible_stutterings))])
                 stutter_encoding_i.append(encoding)

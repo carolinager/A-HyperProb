@@ -26,6 +26,13 @@ benchmark/test/mdp.nm
 "ES sh . E s1 . AT t1 (s1). (P (X (1 = 1 - P (F ~(le1(t1))) ))=0.5)"-stutterLength
 1
 
+-modelPath
+benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . AT t1 (s1). le1(t1)"
+-stutterLength
+2
+
 Works:
 -modelPath
 benchmark/test/mdp.nm
@@ -116,3 +123,10 @@ Documents/Research/HyperProbV2/benchmark/test/mdp.nm
 2
 // satisfied for state assignments {('0', '4'), ('0', '2')}
 // Choose action 0 with probability 1/2; Choose action 1 with probability 1/2
+
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . AT t1 (s1). le1(t1)"
+-stutterLength
+2
