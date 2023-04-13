@@ -24,6 +24,7 @@ class ModelChecker:
         self.no_of_state_quantifier = 0
         self.no_of_stutter_quantifier = 0
         self.stutter_state_mapping = None  # value at index of stutter variable is the corresponding state variable
+        self.dict_pair_index = dict() # dictionary mapping all state-action-pairs to their index in the tuples representing the stutter-schedulers
 
     def modelCheck(self):
         non_quantified_property, self.no_of_state_quantifier, state_indices = propertyparser.checkStateQuantifiers(
@@ -35,26 +36,26 @@ class ModelChecker:
         non_quantified_property = non_quantified_property.children[0]
         start_time = time.perf_counter()
         self.encodeActions()
-        self.encodeStuttering()
-        combined_list_of_states = list(
-            itertools.product(self.model.getListOfStates(), repeat=self.no_of_state_quantifier))
+        # self.encodeStuttering()
+        # combined_list_of_states = list(
+        #    itertools.product(self.model.getListOfStates(), repeat=self.no_of_state_quantifier))
         combined_list_of_states_with_initial_stutter = list(itertools.product(self.model.getListOfStates(), [0]))
         combined_list_of_states_with_stutter = list(
             itertools.product(combined_list_of_states_with_initial_stutter, repeat=self.no_of_stutter_quantifier))
 
         if self.initial_hyperproperty.parsed_property.data == 'exist_scheduler':
-            self.addToSubformulaList(non_quantified_property)
-            self.encodeStateAndStutterQuantifiers(combined_list_of_states_with_stutter)
-            common.colourinfo("Encoded quantifiers", False)
-            semanticEncoder = SemanticsEncoder(self.model, self.solver,
-                                               self.list_of_subformula,
-                                               self.dictOfReals, self.dictOfBools, self.dictOfInts,
-                                               self.no_of_subformula,
-                                               self.no_of_state_quantifier, self.no_of_stutter_quantifier,
-                                               self.stutterLength,
-                                               self.stutter_state_mapping)
-            semanticEncoder.encodeSemantics(non_quantified_property)
-            common.colourinfo("Encoded non-quantified formula...", False)
+            self.addToSubformulaList(non_quantified_property) # todo dont really need nq property here anymore
+            self.truth(combined_list_of_states_with_stutter)
+            # common.colourinfo("Encoded quantifiers", False)
+            # semanticEncoder = SemanticsEncoder(self.model, self.solver,
+            #                                    self.list_of_subformula,
+            #                                    self.dictOfReals, self.dictOfBools, self.dictOfInts,
+            #                                    self.no_of_subformula,
+            #                                    self.no_of_state_quantifier, self.no_of_stutter_quantifier,
+            #                                    self.stutterLength,
+            #                                    self.stutter_state_mapping)
+            # semanticEncoder.encodeSemantics(non_quantified_property)
+            # common.colourinfo("Encoded non-quantified formula...", False)
             smt_end_time = time.perf_counter() - start_time
             self.printResult(smt_end_time, 'exists')
 
@@ -62,17 +63,17 @@ class ModelChecker:
             negated_non_quantified_property = propertyparser.negateForallProperty(
                 self.initial_hyperproperty.parsed_property)
             self.addToSubformulaList(negated_non_quantified_property)
-            self.encodeStateAndStutterQuantifiers(combined_list_of_states_with_stutter)
-            common.colourinfo("Encoded quantifiers", False)
-            semanticEncoder = SemanticsEncoder(self.model, self.solver,
-                                               self.list_of_subformula,
-                                               self.dictOfReals, self.dictOfBools, self.dictOfInts,
-                                               self.no_of_subformula,
-                                               self.no_of_state_quantifier, self.no_of_stutter_quantifier,
-                                               self.stutterLength,
-                                               self.stutter_state_mapping)
-            semanticEncoder.encodeSemantics(negated_non_quantified_property)
-            common.colourinfo("Encoded non-quantified formula...", False)
+            self.truth(combined_list_of_states_with_stutter)
+            # common.colourinfo("Encoded quantifiers", False)
+            # semanticEncoder = SemanticsEncoder(self.model, self.solver,
+            #                                    self.list_of_subformula,
+            #                                    self.dictOfReals, self.dictOfBools, self.dictOfInts,
+            #                                    self.no_of_subformula,
+            #                                    self.no_of_state_quantifier, self.no_of_stutter_quantifier,
+            #                                    self.stutterLength,
+            #                                    self.stutter_state_mapping)
+            # semanticEncoder.encodeSemantics(negated_non_quantified_property)
+            # common.colourinfo("Encoded non-quantified formula...", False)
             smt_end_time = time.perf_counter() - start_time
             self.printResult(smt_end_time, 'forall')
 
@@ -117,31 +118,32 @@ class ModelChecker:
         self.no_of_subformula += 1
         common.colourinfo("Encoded actions in the MDP...")
 
-    def encodeStuttering(self):
-        list_over_quantifiers = []
-        for quantifier in range(0, self.no_of_stutter_quantifier):
-            list_over_states = []
-            for state in self.model.parsed_model.states:
-                list_over_actions = []
-                for action in state.actions:
-                    # list_of_equations = []
-                    # t_i_s_x means stutter duration for stutter quantifier i and state s and action x
-                    name = "t_" + str(quantifier + 1) + "_" + str(state.id) + "_" + str(action.id)
-                    self.addToVariableList(name)
-                    # for stutter_length in range(0, self.stutterLength):
-                    #    list_of_equations.append(self.dictOfInts[name] == int(stutter_length)) # todo unnecessary, bounds would suffice ?
-                    lower_bound = self.dictOfInts[name] >= int(0)
-                    upper_bound = self.dictOfInts[name] < int(self.stutterLength)
-                    list_over_actions.append(And(lower_bound,
-                                                 upper_bound))  # Or(list_of_equations),
-                    self.no_of_subformula += 1
-                list_over_states.append(And(list_over_actions))
-                self.no_of_subformula += 1
-            list_over_quantifiers.append(And(list_over_states))
-            self.no_of_subformula += 1
-        self.solver.add(And(list_over_quantifiers))
-        self.no_of_subformula += 1
-        common.colourinfo("Encoded stutter actions in the MDP...")
+    # def encodeStuttering(self):
+    # # encode stuttering choices
+    #     list_over_quantifiers = []
+    #     for quantifier in range(0, self.no_of_stutter_quantifier):
+    #         list_over_states = []
+    #         for state in self.model.parsed_model.states:
+    #             list_over_actions = []
+    #             for action in state.actions:
+    #                 # list_of_equations = []
+    #                 # t_i_s_x means stutter duration for stutter quantifier i and state s and action x
+    #                 name = "t_" + str(quantifier + 1) + "_" + str(state.id) + "_" + str(action.id)
+    #                 self.addToVariableList(name)
+    #                 # for stutter_length in range(0, self.stutterLength):
+    #                 #    list_of_equations.append(self.dictOfInts[name] == int(stutter_length)) # todo unnecessary, bounds would suffice ?
+    #                 lower_bound = self.dictOfInts[name] >= int(0)
+    #                 upper_bound = self.dictOfInts[name] < int(self.stutterLength)
+    #                 list_over_actions.append(And(lower_bound,
+    #                                              upper_bound))  # Or(list_of_equations),
+    #                 self.no_of_subformula += 1
+    #             list_over_states.append(And(list_over_actions))
+    #             self.no_of_subformula += 1
+    #         list_over_quantifiers.append(And(list_over_states))
+    #         self.no_of_subformula += 1
+    #     self.solver.add(And(list_over_quantifiers))
+    #     self.no_of_subformula += 1
+    #     common.colourinfo("Encoded stutter actions in the MDP...")
 
     def addToVariableList(self, name):
         if name[0] == 'h' and not name.startswith('holdsToInt'):  # holds_
@@ -151,7 +153,9 @@ class ModelChecker:
         elif name[0] in ['t']:  # t_
             self.dictOfInts[name] = Int(name)
 
-    def addToSubformulaList(self, formula_phi):  # add as you go any new subformula part as needed
+    def addToSubformulaList(self, formula_phi):
+    # add as you go any new subformula part as needed
+    # also adds all subformulas of the formula to the list
         if formula_phi.data in ['exist_scheduler', 'forall_scheduler', 'exist_state', 'forall_state']:
             formula_phi = formula_phi.children[1]
             self.addToSubformulaList(formula_phi)
@@ -195,12 +199,12 @@ class ModelChecker:
             right_child = formula_phi.children[3]
             self.addToSubformulaList(right_child)
 
-    def encodeStateAndStutterQuantifiers(self, combined_list_of_states_and_stutter):
+    def truth(self, combined_list_of_states_and_stutter):
         # corresponds to Algo 5 "Truth"
         # encode quantifiers, i.e. translate forall to And and exists to Or
         list_of_state_AV = []  # will have the OR, AND according to the quantifier in that index in the formula
         list_of_stutter_AV = []  # placeholder to manage stutter quantifier encoding
-        # TODO: work to remove assumption of stutter schedulers named in order
+        # TODO (optional): work to remove assumption of stutter schedulers named in order
         changed_hyperproperty = self.initial_hyperproperty.parsed_property
         while len(changed_hyperproperty.children) > 0:
             if changed_hyperproperty.data in ['exist_scheduler', 'forall_scheduler']:
@@ -227,39 +231,40 @@ class ModelChecker:
                 break
         # TODO: read and track relevant quantifiers ->  Done in a way
 
+        # changed_hyperproperty is now phi^nq, the outermost non-quantified formula
         index_of_phi = self.list_of_subformula.index(changed_hyperproperty)
 
         # create all possible stutter-schedulers: assign one stutter-length to each state-action-pair
-        dict_pair_index = dict()  # dictionary mapping state-action-pairs to their index in an ordered enumeration of all state-action pairs
+        # dict_pair_index = dict()  # dictionary mapping state-action-pairs to their index in an ordered enumeration of all state-action pairs
         i = 0
         for state in self.model.parsed_model.states:
             for action in state.actions:
                 # list_of_state_action_pairs.append((state.id, action.id))
-                dict_pair_index[(state.id, action.id)] = i
+                self.dict_pair_index[(state.id, action.id)] = i
                 i += 1
-        possible_stutterings = list(itertools.product(list(range(self.stutterLength)), repeat=i))
+        possible_stutterings = list(itertools.product(list(range(self.stutterLength)), repeat=i)) # list of all possible functions f : S x Act -> {0, ..., stutterLength - 1}, represented as tuples
+        combined_stutterscheds = list(itertools.product(possible_stutterings, repeat=self.no_of_stutter_quantifier))
 
         # create list of preconditions for the encoding of stutter-quantifiers
-        # TODO: naming of tau_i_s in algo line 5
-        list_of_holds = []
-        list_of_precondition = []
-        for i in range(len(list_of_stutter_AV)):  # todo vs no_stutter_quant
-            list_over_states = []
-            for stutter_sched in possible_stutterings:  # range over possible stuttering-schedulers # todo change
-                list_over_actions = []
-                for state in self.model.parsed_model.states:
-                    list_of_eqs = []
-                    for action in state.actions:
-                        name_tau = "t_" + str(i + 1) + "_" + str(state) + "_" + str(action.id)
-                        index_of_pair = dict_pair_index[(state.id, action.id)]
-                        list_of_eqs.append(self.dictOfInts[name_tau] == stutter_sched[index_of_pair])
-                    list_over_actions.append(And(list_of_eqs))
-                    self.no_of_subformula += 1
-                list_over_states.append(And(list_over_actions))
-                self.no_of_subformula += 1
-            list_of_precondition.append(list_over_states)
+        # list_of_precondition = []
+        # for i in range(len(list_of_stutter_AV)):  # todo vs no_stutter_quant
+        #     list_over_states = []
+        #     for stutter_sched in possible_stutterings:  # range over possible stuttering-schedulers # todo change
+        #         list_over_actions = []
+        #         for state in self.model.parsed_model.states:
+        #             list_of_eqs = []
+        #             for action in state.actions:
+        #                 name_tau = "t_" + str(i + 1) + "_" + str(state) + "_" + str(action.id)
+        #                 index_of_pair = dict_pair_index[(state.id, action.id)]
+        #                 list_of_eqs.append(self.dictOfInts[name_tau] == stutter_sched[index_of_pair])
+        #             list_over_actions.append(And(list_of_eqs))
+        #             self.no_of_subformula += 1
+        #         list_over_states.append(And(list_over_actions))
+        #         self.no_of_subformula += 1
+        #     list_of_precondition.append(list_over_states)
 
         # create list of holds_(s1,0)_..._0 for all state combinations
+        list_of_holds = []
         for i in range(len(combined_list_of_states_and_stutter)):
             name = "holds_"
             for j in range(self.no_of_state_quantifier):
@@ -268,22 +273,33 @@ class ModelChecker:
             self.addToVariableList(name)
             list_of_holds.append(self.dictOfBools[name])
 
+        # create semantic encoding for each possible combination of stutter-schedulers
+        list_of_encodings = []
+        semanticEncoder = SemanticsEncoder(self.model, self.solver,
+                                           self.list_of_subformula,
+                                           self.dictOfReals, self.dictOfBools, self.dictOfInts,
+                                           self.no_of_subformula,
+                                           self.no_of_state_quantifier, self.no_of_stutter_quantifier,
+                                           self.stutterLength,
+                                           self.stutter_state_mapping, self.dict_pair_index)
+        for stutter_scheds in combined_stutterscheds:
+            list_of_encodings.append(semanticEncoder.encodeSemantics(changed_hyperproperty, stutter_scheds)[1])
+        common.colourinfo("Encoded non-quantified formula...", False)
+
         # encode stutter scheduler quantifiers (for each possible assignment of the state variables)
         stutter_encoding_i = []
-        # TODO: there has to be a change here
-        stutter_encoding_ipo = list_of_holds
+        stutter_encoding_ipo = [And(x) for x in list_of_encodings]
+        self.no_of_subformula += len(list_of_encodings)
         for quant in range(self.no_of_stutter_quantifier, 0, -1):  # n, ..., 1
-            for state_tuple in itertools.product(self.model.getListOfStates(),
-                                                 repeat=len(self.stutter_state_mapping.keys())):
-                list_of_precond = list_of_precondition[quant - 1]  # indexed starting from 0
-                postcond = self.fetch_value(stutter_encoding_ipo, state_tuple)
-                if list_of_stutter_AV[quant - 1] == 'AT':
-                    encoding = And([Implies(list_of_precond[i], postcond) for i in range(len(possible_stutterings))])   # changing "implies" to "and" to force all stutterings to be true will yield an unsatisfiable formula
-                elif list_of_stutter_AV[quant - 1] == 'VT':
-                    encoding = Or([And(list_of_precond[i], postcond) for i in range(len(possible_stutterings))])
-                stutter_encoding_i.append(encoding)
-                self.no_of_subformula += 1
-                # TODO as how many subformulas should this count?
+            n = len(possible_stutterings)
+            len_i = int(len(stutter_encoding_ipo) / n)
+            if list_of_stutter_AV[quant - 1] == 'AT':
+                stutter_encoding_i = [And(stutter_encoding_ipo[(j * n):((j + 1) * n)]) for j in range(len_i)]
+                # todo: add to solver
+            elif list_of_stutter_AV[quant - 1] == 'VT':
+                stutter_encoding_i = [Or(stutter_encoding_ipo[(j * n):((j + 1) * n)]) for j in range(len_i)]
+            self.no_of_subformula += 1
+            # TODO as how many subformulas should this count?
             stutter_encoding_ipo.clear()
             stutter_encoding_ipo = copy.deepcopy(stutter_encoding_i)
             stutter_encoding_i.clear()
@@ -291,7 +307,7 @@ class ModelChecker:
         # iteratively encode state quantifiers
         # TODO adjust if we choose to allow several stutter-quant for a state-quant
         state_encoding_i = []
-        state_encoding_ipo = copy.deepcopy(stutter_encoding_ipo)
+        state_encoding_ipo = [And(x, stutter_encoding_ipo[0]) for x in list_of_holds]
         for quant in range(self.no_of_stutter_quantifier, 0, -1):
             n = len(self.model.getListOfStates())
             len_i = int(len(state_encoding_ipo) / n)
@@ -312,6 +328,8 @@ class ModelChecker:
         # the formula can now be accessed via state_encoding_ipo[0]
         # print(state_encoding_ipo[0])
         self.solver.add(state_encoding_ipo[0])
+
+        common.colourinfo("Encoded quantifiers", False)
 
     def checkResult(self):
         starting_time = time.perf_counter()
