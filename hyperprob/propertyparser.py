@@ -83,7 +83,6 @@ class Property:
     def printProperty(self):
         print(self.parsed_property.pretty())
 
-
 '''
 def findToken(formula, token):
     no_of_children = len(formula.children)
