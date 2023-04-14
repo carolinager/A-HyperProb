@@ -71,7 +71,7 @@ class SemanticsEncoder:
                     list_of_state_with_ap.append(state)
             combined_state_list = self.generateComposedStatesWithStutter(
                 relevant_quantifier)  # tuples without stutterlength
-            # combined_state_list_with_stutter = self.generateComposedStatesWithStutter(relevant_quantifier)
+
             for r_state in combined_state_list:
                 name = 'holds'
                 for tup in r_state:
@@ -644,7 +644,6 @@ class SemanticsEncoder:
         :param relevant_quantifier: list of relevant quantifiers (referenced by name)
         :return: list of successor states with entries of the form ["successor state", "probability of reaching that state"]
         """
-        # todo
         dicts = []
         for l in range(len(relevant_quantifier)):
             rel_quant_index = relevant_quantifier[l] - 1
@@ -656,7 +655,7 @@ class SemanticsEncoder:
                     space = s.find(' ')
                     succ_state = (int(s[0:space]), 0)
                     list_of_all_succ.append([str(succ_state), s[space + 1:]])
-            else:  # if r_state[relevant_quantifier[l]-1][1] < h_tuple[l][ca[l]]
+            else:  # i.e., if stutter_scheds[rel_quant_index][self.dict_pair_index[rel_state[0], ca[l]]] > rel_state[1]
                 list_of_all_succ = [[str((rel_state[0],
                                           rel_state[1] + 1)),
                                      str(1)]]
@@ -690,9 +689,6 @@ class SemanticsEncoder:
                 And(self.dictOfReals[holdsToInt1] == float(0),
                     Not(self.dictOfBools[holds1])))
             self.no_of_subformula += 3
-            # new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
-            # new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
-            # encoding.append(And(first_and, new_prob_const_1, new_prob_const_0))
             encoding.append(first_and)
 
             # create list of all possible actions for r_state
@@ -906,7 +902,6 @@ class SemanticsEncoder:
                 self.no_of_subformula += 2
                 encoding.append(And(eq1, eq2))
                 self.no_of_subformula += 1
-            x=0
 
         elif k1 == 0:
             left, k_1, k_2, right = hyperproperty.children[0].children
@@ -924,8 +919,6 @@ class SemanticsEncoder:
             # OD: Makes sense, but I keopt this for the cases where the bounds are [0,3], then this is the first case it hits.
             # LG: but actually the base case is executed first, since we recursively call BoundedSem
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
-            # rel_quant1 = int(str(hyperproperty.children[0].children[0].children[1].children[0])[1:])
-            # rel_quant2 = int(str(hyperproperty.children[0].children[3].children[1].children[0])[1:])
 
             for r_state in combined_state_list:
                 # encode cases where we know probability is 0 or 1 and require probs variables to be in [0,1]
@@ -1007,7 +1000,6 @@ class SemanticsEncoder:
                 self.no_of_subformula += 1
                 encoding.append(Implies(implies_precedent, prob_calc_enc))
                 self.no_of_subformula += 1
-            x2 = 0
 
         elif k1 > 0:
             left, k_1, k_2, right = hyperproperty.children[0].children
@@ -1021,8 +1013,6 @@ class SemanticsEncoder:
             rel_quant, rel_quant1, rel_quant2, encoding = self.encodeBoundedUntilSemantics(hyperproperty_new, stutter_scheds)
             relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
-            # rel_quant1 = int(str(hyperproperty.children[0].children[0].children[1].children[0])[1:])
-            # rel_quant2 = int(str(hyperproperty.children[0].children[3].children[1].children[0])[1:])
 
             for r_state in combined_state_list:
                 # encode cases where we know probability is 0 and require probs variables to be in [0,1]
