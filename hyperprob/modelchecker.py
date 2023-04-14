@@ -274,6 +274,8 @@ class ModelChecker:
             list_of_holds.append(self.dictOfBools[name])
 
         # create semantic encoding for each possible combination of stutter-schedulers
+        common.colourinfo("Start encoding non-quantified formula for all possible stutter-schedulers... (this might take some time)", False)
+        enc_starting_time = time.perf_counter()
         list_of_encodings = []
         semanticEncoder = SemanticsEncoder(self.model, self.solver,
                                            self.list_of_subformula,
@@ -284,7 +286,8 @@ class ModelChecker:
                                            self.stutter_state_mapping, self.dict_pair_index)
         for stutter_scheds in combined_stutterscheds:
             list_of_encodings.append(semanticEncoder.encodeSemantics(changed_hyperproperty, stutter_scheds)[1])
-        common.colourinfo("Encoded non-quantified formula...", False)
+        encoding_time = time.perf_counter() - enc_starting_time
+        common.colourinfo("Finished encoding non-quantified formula...", False)
 
         # encode stutter scheduler quantifiers (for each possible assignment of the state variables)
         stutter_encoding_i = []
@@ -367,7 +370,8 @@ class ModelChecker:
                 for i in range(0, len(actions)):
                     common.colouroutput("Choose action " + str(i) + " with probability " + str(actions[i]), False)
                 print(
-                    "\nThe following state variable assignments satisfy the property (tuples ordered by stutter quantification):")  # todo order of quantification? order of stutterquant ??
+                    "\nThe following state variable assignments satisfy the property "
+                    "(tuples ordered by stutter quantification):")  # todo order of quantification? order of stutterquant ??
                 print(
                     holds)  # for each assignment: state associated with first stutter-sched var is listed first, and so on
                 print("\nChoose stutterscheduler as follows:")
