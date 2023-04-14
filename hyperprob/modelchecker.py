@@ -202,7 +202,6 @@ class ModelChecker:
 
         # create semantic encoding for each possible combination of stutter-schedulers
         common.colourinfo("Start encoding non-quantified formula for all possible stutter-schedulers... (this might take some time)", False)
-        enc_starting_time = time.perf_counter()
         list_of_encodings = []
         semanticEncoder = SemanticsEncoder(self.model, self.solver,
                                            self.list_of_subformula,
@@ -213,7 +212,9 @@ class ModelChecker:
                                            self.stutter_state_mapping, self.dict_pair_index)
         for stutter_scheds in combined_stutterscheds:
             list_of_encodings.append(semanticEncoder.encodeSemantics(changed_hyperproperty, stutter_scheds)[1])
-        encoding_time = time.perf_counter() - enc_starting_time
+
+            # todo introduce some dummy variable t_stutter_scheds s.t.  t_stutter_scheds iff encoding(stutter_scheds)
+            # only for outputting purposes
         common.colourinfo("Finished encoding non-quantified formula...", False)
 
         # encode stutter scheduler quantifiers (for each possible assignment of the state variables)
@@ -229,7 +230,6 @@ class ModelChecker:
             elif list_of_stutter_AV[quant - 1] == 'VT':
                 stutter_encoding_i = [Or(stutter_encoding_ipo[(j * n):((j + 1) * n)]) for j in range(len_i)]
             self.no_of_subformula += 1
-            # TODO as how many subformulas should this count?
             stutter_encoding_ipo.clear()
             stutter_encoding_ipo = copy.deepcopy(stutter_encoding_i)
             stutter_encoding_i.clear()
@@ -238,6 +238,7 @@ class ModelChecker:
         # TODO adjust if we choose to allow several stutter-quant for a state-quant
         state_encoding_i = []
         state_encoding_ipo = [And(x, stutter_encoding_ipo[0]) for x in list_of_holds]
+        print(state_encoding_ipo[-2])
         for quant in range(self.no_of_stutter_quantifier, 0, -1):
             n = len(self.model.getListOfStates())
             len_i = int(len(state_encoding_ipo) / n)
@@ -245,8 +246,7 @@ class ModelChecker:
                 state_encoding_i = [And(state_encoding_ipo[(j * n):((j + 1) * n)]) for j in range(len_i)]
             elif list_of_state_AV[quant - 1] == 'V':
                 state_encoding_i = [Or(state_encoding_ipo[(j * n):((j + 1) * n)]) for j in range(len_i)]
-            self.no_of_subformula += len_i
-            # TODO as how many should this count: 1 or len_i
+            self.no_of_subformula += 1
             state_encoding_ipo.clear()
             state_encoding_ipo = copy.deepcopy(state_encoding_i)
             state_encoding_i.clear()
@@ -279,9 +279,9 @@ class ModelChecker:
     def printResult(self, smt_end_time, scheduler_quantifier):
         common.colourinfo("Checking...", False)
         smt_result, actions, holds, statistics, z3_time = self.checkResult()
+        # todo dont distinguish output by scheduler_quantifier? since we have many alternating quantifiers
         if scheduler_quantifier == 'exists':
             if smt_result:
-                # todo adjust to more fine-grained output depending on different quantifier combinations?
                 # todo somehow also output stutter-scheduler?
                 common.colouroutput("The property HOLDS!")
                 print("\nThe values of variables of the witness are:")

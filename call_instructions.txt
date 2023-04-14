@@ -33,6 +33,27 @@ benchmark/test/mdp.nm
 -stutterLength
 2
 
+-modelPath
+benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . AT t1 (s1). (P(X le1(t1)) = 1)"
+-stutterLength
+2
+
+-modelPath
+benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . ET t1 (s1). ~((P(X le1(t1)) = 1))"
+-stutterLength
+2
+
+-modelPath
+benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . AT t1 (s1). ~((P(X le1(t1)) = 1))"
+-stutterLength
+2
+
 Works:
 -modelPath
 benchmark/test/mdp.nm
@@ -128,5 +149,26 @@ Documents/Research/HyperProbV2/benchmark/test/mdp.nm
 Documents/Research/HyperProbV2/benchmark/test/mdp.nm
 -hyperString
 "ES sh . E s1 . AT t1 (s1). le1(t1)"
+-stutterLength
+2
+
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . AT t1 (s1). (P(X le1(t1)) = 1)"
+-stutterLength
+2
+
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . ET t1 (s1). ~((P(X le1(t1)) = 1))"
+-stutterLength
+2
+
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . AT t1 (s1). ~((P(X le1(t1)) = 1))"
 -stutterLength
 2
