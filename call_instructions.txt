@@ -69,6 +69,49 @@ benchmark/test/mdp.nm
 -stutterLength
 1
 
+****+ take long to encode and/or check
+-modelPath
+benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . E s2 . ET t1 (s1). AT t2 (s2) . ((le1(t2) & hg0(t1)) & (P(X hg0(t1)) = 0.5 ))"
+-stutterLength
+2
+
+-modelPath
+benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . E s2 . AT t1 (s1). AT t2 (s2) . ((le1(t2) & hg0(t1)) & (P(X hg0(t1)) = 0.5 ))"
+-stutterLength
+2
+
+-modelPath
+benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . E s2 . AT t1 (s1). ET t2 (s2) . ((le1(t2) & hg0(t1)) & (P(X hg0(t1)) = 0.5 ))"
+-stutterLength
+2
+
+-modelPath
+benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . E s2 . ET t1 (s1). ET t2 (s2) . ((le1(t2) & hg0(t1)) & (P(X hg0(t1)) = 0.5 ))"
+-stutterLength
+2
+
+-modelPath
+benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . ET t1 (s1). (hg0(t1) & (P(true U[2,2] le1(t1)) = 0.25))"
+-stutterLength
+2
+
+-modelPath
+benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . ET t1 (s1). (hg0(t1) & (P(F le1(t1)) = 1))"
+-stutterLength
+2
+
 ************************************************************************************************************************
 Lina:
 -modelPath
@@ -170,5 +213,48 @@ Documents/Research/HyperProbV2/benchmark/test/mdp.nm
 Documents/Research/HyperProbV2/benchmark/test/mdp.nm
 -hyperString
 "ES sh . E s1 . AT t1 (s1). ~((P(X le1(t1)) = 1))"
+-stutterLength
+2
+
+****+ TODO, take long to encode and/or check
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . E s2 . ET t1 (s1). AT t2 (s2) . ((le1(t2) & hg0(t1)) & (P(X hg0(t1)) = 0.5 ))"
+-stutterLength
+2
+
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . E s2 . AT t1 (s1). AT t2 (s2) . ((le1(t2) & hg0(t1)) & (P(X hg0(t1)) = 0.5 ))"
+-stutterLength
+2
+
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . E s2 . AT t1 (s1). ET t2 (s2) . ((le1(t2) & hg0(t1)) & (P(X hg0(t1)) = 0.5 ))"
+-stutterLength
+2
+
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . E s2 . ET t1 (s1). ET t2 (s2) . ((le1(t2) & hg0(t1)) & (P(X hg0(t1)) = 0.5 ))"
+-stutterLength
+2
+
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . ET t1 (s1). (hg0(t1) & (P(true U[2,2] le1(t1)) = 0.25))"
+-stutterLength
+2
+
+-modelPath
+Documents/Research/HyperProbV2/benchmark/test/mdp.nm
+-hyperString
+"ES sh . E s1 . ET t1 (s1). (hg0(t1) & (P(F le1(t1)) = 1))"
 -stutterLength
 2

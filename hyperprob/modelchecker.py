@@ -235,6 +235,7 @@ class ModelChecker:
             stutter_encoding_ipo.clear()
             stutter_encoding_ipo = copy.deepcopy(stutter_encoding_i)
             stutter_encoding_i.clear()
+        common.colourinfo("Encoded stutter quantifiers", False)
 
         # iteratively encode state quantifiers
         # TODO adjust if we choose to allow several stutter-quant for a state-quant
@@ -254,7 +255,7 @@ class ModelChecker:
         # the formula can now be accessed via state_encoding_ipo[0]
         self.solver.add(state_encoding_ipo[0])
 
-        common.colourinfo("Encoded quantifiers", False)
+        common.colourinfo("Encoded state quantifiers", False)
 
     def checkResult(self):
         starting_time = time.perf_counter()
