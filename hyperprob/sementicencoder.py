@@ -46,7 +46,7 @@ class SemanticsEncoder:
             r_state = [(0, 0) for _ in range(self.no_of_stutter_quantifier)]
             for ind in r_state:
                 name += "_" + str(ind)
-            name += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+            name += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
             self.addToVariableList(name)
             encoding.append(self.dictOfBools[name])
             self.no_of_subformula += 1
@@ -75,8 +75,8 @@ class SemanticsEncoder:
             for r_state in combined_state_list:
                 name = 'holds'
                 for tup in r_state:
-                    name += '_' + str(tup)
-                name += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                    name += "_" + str(tup)
+                name += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                 self.addToVariableList(name)  # should look like: holds_(0, 0)_(0, 0)_2_((0,0,0,0,0,0),)
 
                 # check whether atomic proposition holds or not
@@ -104,7 +104,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                name1 += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                 self.addToVariableList(name1)
                 name2 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -112,7 +112,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                name2 += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                 self.addToVariableList(name2)
                 name3 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -120,7 +120,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += '_' + str(index_of_phi2) + "_" + str(stutter_scheds)
+                name3 += "_" + str(index_of_phi2) + "_" + str(stutter_scheds)
                 self.addToVariableList(name3)
                 first_and = And(self.dictOfBools[name1],
                                 self.dictOfBools[name2],
@@ -148,7 +148,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                name1 += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                 self.addToVariableList(name1)
                 name2 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -156,7 +156,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                name2 += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                 self.addToVariableList(name2)
                 name3 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -164,7 +164,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += '_' + str(index_of_phi2) + "_" + str(stutter_scheds)
+                name3 += "_" + str(index_of_phi2) + "_" + str(stutter_scheds)
                 self.addToVariableList(name3)
                 first_and = And(self.dictOfBools[name1],
                                 Or(self.dictOfBools[name2],
@@ -192,7 +192,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                name1 += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                 self.addToVariableList(name1)
                 name2 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -200,7 +200,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                name2 += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                 self.addToVariableList(name2)
                 name3 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -208,7 +208,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += '_' + str(index_of_phi2) + "_" + str(stutter_scheds)
+                name3 += "_" + str(index_of_phi2) + "_" + str(stutter_scheds)
                 self.addToVariableList(name3)
                 first_and = And(self.dictOfBools[name1],
                                 Or(Not(self.dictOfBools[name2]),
@@ -236,7 +236,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                name1 += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                 self.addToVariableList(name1)
                 name2 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -244,7 +244,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                name2 += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                 self.addToVariableList(name2)
                 name3 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -252,7 +252,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += '_' + str(index_of_phi2) + "_" + str(stutter_scheds)
+                name3 += "_" + str(index_of_phi2) + "_" + str(stutter_scheds)
                 self.addToVariableList(name3)
                 first_and = And(self.dictOfBools[name1],
                                 Or(
@@ -284,12 +284,12 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                name1 += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                 self.addToVariableList(name1)
                 name2 = 'holds'
                 for ind in r_state:
                     name2 += "_" + str(ind)
-                name2 += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                name2 += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                 self.addToVariableList(name2)
                 encoding.append(Xor(self.dictOfBools[name1],
                                     self.dictOfBools[name2]))
@@ -338,7 +338,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                name1 += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                 self.addToVariableList(name1)
                 name2 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -346,7 +346,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                name2 += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                 self.addToVariableList(name2)
                 name3 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -354,7 +354,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += '_' + str(index_of_phi2) + "_" + str(stutter_scheds)
+                name3 += "_" + str(index_of_phi2) + "_" + str(stutter_scheds)
                 self.addToVariableList(name3)
                 and_eq = And(self.dictOfBools[name1],
                              self.dictOfReals[name2] < self.dictOfReals[name3])
@@ -380,7 +380,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                name1 += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                 self.addToVariableList(name1)
                 name2 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -388,7 +388,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                name2 += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                 self.addToVariableList(name2)
                 name3 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -396,7 +396,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += '_' + str(index_of_phi2) + "_" + str(stutter_scheds)
+                name3 += "_" + str(index_of_phi2) + "_" + str(stutter_scheds)
                 self.addToVariableList(name3)
                 and_eq = And(self.dictOfBools[name1],
                              self.dictOfReals[name2] == self.dictOfReals[name3])
@@ -422,7 +422,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                name1 += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                 self.addToVariableList(name1)
                 name2 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -430,7 +430,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                name2 += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                 self.addToVariableList(name2)
                 name3 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -438,7 +438,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += '_' + str(index_of_phi2) + "_" + str(stutter_scheds)
+                name3 += "_" + str(index_of_phi2) + "_" + str(stutter_scheds)
                 self.addToVariableList(name3)
                 and_eq = And(self.dictOfBools[name1],
                              self.dictOfReals[name2] > self.dictOfReals[name3])
@@ -464,7 +464,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                name1 += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                 self.addToVariableList(name1)
                 name2 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -472,7 +472,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                name2 += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                 self.addToVariableList(name2)
                 name3 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -480,7 +480,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += '_' + str(index_of_phi2) + "_" + str(stutter_scheds)
+                name3 += "_" + str(index_of_phi2) + "_" + str(stutter_scheds)
                 self.addToVariableList(name3)
                 and_eq = And(self.dictOfBools[name1],
                              self.dictOfReals[name2] >= self.dictOfReals[name3])
@@ -506,7 +506,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                name1 += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                 self.addToVariableList(name1)
                 name2 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -514,7 +514,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                name2 += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                 self.addToVariableList(name2)
                 name3 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -522,7 +522,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += '_' + str(index_of_phi2) + "_" + str(stutter_scheds)
+                name3 += "_" + str(index_of_phi2) + "_" + str(stutter_scheds)
                 self.addToVariableList(name3)
                 and_eq = And(self.dictOfBools[name1],
                              self.dictOfReals[name2] <= self.dictOfReals[name3])
@@ -541,7 +541,7 @@ class SemanticsEncoder:
             r_state = [(0, 0) for _ in range(self.no_of_stutter_quantifier)]
             for tup in r_state:
                 name += "_" + str(tup)
-            name += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+            name += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
             self.addToVariableList(name)
             encoding.append(self.dictOfReals[name] == constant)
             self.no_of_subformula += 1
@@ -561,7 +561,7 @@ class SemanticsEncoder:
                 name1 = 'prob'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                name1 += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                 self.addToVariableList(name1)
                 name2 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -569,7 +569,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += '_' + str(index_left) + "_" + str(stutter_scheds)
+                name2 += "_" + str(index_left) + "_" + str(stutter_scheds)
                 self.addToVariableList(name2)
                 name3 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -577,7 +577,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += '_' + str(index_right) + "_" + str(stutter_scheds)
+                name3 += "_" + str(index_right) + "_" + str(stutter_scheds)
                 self.addToVariableList(name3)
                 if hyperproperty.data == 'add_probability':
                     encoding.append(self.dictOfReals[name1] == (
@@ -720,13 +720,13 @@ class SemanticsEncoder:
                         if l in relevant_quantifier:
                             l_index = relevant_quantifier.index(l)
                             succ_state = cs[l_index][0]
-                            holdsToInt_succ += '_' + succ_state
+                            holdsToInt_succ += "_" + succ_state
                             product *= RealVal(cs[l_index][1]).as_fraction()
                             product *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                         else:
-                            holdsToInt_succ += '_' + str((0, 0))
+                            holdsToInt_succ += "_" + str((0, 0))
 
-                    holdsToInt_succ += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                    holdsToInt_succ += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                     self.addToVariableList(holdsToInt_succ)
                     product *= self.dictOfReals[holdsToInt_succ]
 
@@ -774,7 +774,7 @@ class SemanticsEncoder:
             prob_phi = 'prob'
             for tup in r_state:
                 prob_phi += "_" + str(tup)
-            prob_phi += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+            prob_phi += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
             self.addToVariableList(prob_phi)
 
             new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
@@ -820,30 +820,30 @@ class SemanticsEncoder:
                         if l in relevant_quantifier:
                             l_index = relevant_quantifier.index(l)
                             succ_state = cs[l_index][0]
-                            prob_succ += '_' + succ_state
-                            holds_succ += '_' + succ_state
-                            d_succ += '_' + succ_state
+                            prob_succ += "_" + succ_state
+                            holds_succ += "_" + succ_state
+                            d_succ += "_" + succ_state
                             product *= RealVal(cs[l_index][1]).as_fraction()
                             product *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                             sched_prob *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                         else:
-                            prob_succ += '_' + str((0, 0))
-                            holds_succ += '_' + str((0, 0))
-                            d_succ += '_' + str((0, 0))
-                        d_current += '_' + str(r_state[l - 1])
+                            prob_succ += "_" + str((0, 0))
+                            holds_succ += "_" + str((0, 0))
+                            d_succ += "_" + str((0, 0))
+                        d_current += "_" + str(r_state[l - 1])
 
-                    prob_succ += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                    prob_succ += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                     self.addToVariableList(prob_succ)
                     product *= self.dictOfReals[prob_succ]
                     sum_of_probs += product
                     self.no_of_subformula += 1
 
                     # loop condition
-                    holds_succ += '_' + str(index_of_phi2) + "_" + str(stutter_scheds)
+                    holds_succ += "_" + str(index_of_phi2) + "_" + str(stutter_scheds)
                     self.addToVariableList(holds_succ)
-                    d_current += '_' + str(index_of_phi2) + "_" + str(stutter_scheds)
+                    d_current += "_" + str(index_of_phi2) + "_" + str(stutter_scheds)
                     self.addToVariableList(d_current)
-                    d_succ += '_' + str(index_of_phi2) + "_" + str(stutter_scheds)
+                    d_succ += "_" + str(index_of_phi2) + "_" + str(stutter_scheds)
                     self.addToVariableList(d_succ)
                     loop_condition_list.append(And(sched_prob > 0,
                                                    Or(self.dictOfBools[holds_succ],
@@ -889,7 +889,7 @@ class SemanticsEncoder:
                 name1 = 'prob'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                name1 += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                 self.addToVariableList(name1)
                 name2 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -897,7 +897,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += '_' + str(index_of_phi2) + "_" + str(stutter_scheds)
+                name2 += "_" + str(index_of_phi2) + "_" + str(stutter_scheds)
                 self.addToVariableList(name2)
 
                 eq1 = Implies(self.dictOfBools[name2],
@@ -947,7 +947,7 @@ class SemanticsEncoder:
                 prob_phi = 'prob'
                 for tup in r_state:
                     prob_phi += "_" + str(tup)
-                prob_phi += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                prob_phi += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                 self.addToVariableList(prob_phi)
 
                 new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
@@ -989,13 +989,13 @@ class SemanticsEncoder:
                             if l in relevant_quantifier:
                                 l_index = relevant_quantifier.index(l)
                                 succ_state = cs[l_index][0]
-                                prob_succ += '_' + succ_state
+                                prob_succ += "_" + succ_state
                                 product *= RealVal(cs[l_index][1]).as_fraction()
                                 product *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                             else:
-                                prob_succ += '_' + str((0, 0))
+                                prob_succ += "_" + str((0, 0))
 
-                        prob_succ += '_' + str(index_of_replaced) + "_" + str(stutter_scheds)
+                        prob_succ += "_" + str(index_of_replaced) + "_" + str(stutter_scheds)
                         self.addToVariableList(prob_succ)
                         product *= self.dictOfReals[prob_succ]
 
@@ -1034,7 +1034,7 @@ class SemanticsEncoder:
                 prob_phi = 'prob'
                 for tup in r_state:
                     prob_phi += "_" + str(tup)
-                prob_phi += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                prob_phi += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                 self.addToVariableList(prob_phi)
 
                 new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
@@ -1072,14 +1072,14 @@ class SemanticsEncoder:
                             if l in relevant_quantifier:
                                 l_index = relevant_quantifier.index(l)
                                 succ_state = cs[l_index][0]
-                                prob_succ += '_' + succ_state
+                                prob_succ += "_" + succ_state
                                 product *= RealVal(cs[l_index][1]).as_fraction()
                                 product *= self.dictOfReals[
                                     "a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                             else:
-                                prob_succ += '_' + str((0, 0))
+                                prob_succ += "_" + str((0, 0))
 
-                        prob_succ += '_' + str(index_of_replaced) + "_" + str(stutter_scheds)
+                        prob_succ += "_" + str(index_of_replaced) + "_" + str(stutter_scheds)
                         self.addToVariableList(prob_succ)
                         product *= self.dictOfReals[prob_succ]
                         sum_of_probs += product
@@ -1089,7 +1089,7 @@ class SemanticsEncoder:
                 self.no_of_subformula += 1
                 encoding.append(Implies(implies_precedent, prob_calc_enc))
                 self.no_of_subformula += 1
-            x3=0
+
         return relevant_quantifier, rel_quant1, rel_quant2, encoding
 
     def encodeFutureSemantics(self, hyperproperty, stutter_scheds, relevant_quantifier=[]):
@@ -1109,7 +1109,7 @@ class SemanticsEncoder:
             holds1 += str_r_state + "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
             self.addToVariableList(holds1)
             prob_phi = 'prob'
-            prob_phi += str_r_state + '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+            prob_phi += str_r_state + "_" + str(index_of_phi) + "_" + str(stutter_scheds)
             self.addToVariableList(prob_phi)
 
             new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
@@ -1153,30 +1153,30 @@ class SemanticsEncoder:
                         if l in relevant_quantifier:
                             l_index = relevant_quantifier.index(l)
                             succ_state = cs[l_index][0]
-                            prob_succ += '_' + succ_state
-                            holds_succ += '_' + succ_state
-                            d_succ += '_' + succ_state
+                            prob_succ += "_" + succ_state
+                            holds_succ += "_" + succ_state
+                            d_succ += "_" + succ_state
                             product *= RealVal(cs[l_index][1]).as_fraction()
                             product *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                             sched_prob *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                         else:
-                            prob_succ += '_' + str((0, 0))
-                            holds_succ += '_' + str((0, 0))
-                            d_succ += '_' + str((0, 0))
-                        d_current += '_' + str(r_state[l - 1])
+                            prob_succ += "_" + str((0, 0))
+                            holds_succ += "_" + str((0, 0))
+                            d_succ += "_" + str((0, 0))
+                        d_current += "_" + str(r_state[l - 1])
 
-                    prob_succ += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                    prob_succ += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                     self.addToVariableList(prob_succ)
                     product *= self.dictOfReals[prob_succ]
                     sum_of_probs += product
                     self.no_of_subformula += 1
 
                     # loop condition
-                    holds_succ += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                    holds_succ += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                     self.addToVariableList(holds_succ)
-                    d_current += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                    d_current += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                     self.addToVariableList(d_current)
-                    d_succ += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                    d_succ += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                     self.addToVariableList(d_succ)
                     loop_condition_list.append(And(sched_prob > 0,
                                                    Or(self.dictOfBools[holds_succ],
@@ -1212,7 +1212,7 @@ class SemanticsEncoder:
             holds1 += str_r_state + "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
             self.addToVariableList(holds1)
             prob_phi = 'prob'
-            prob_phi += str_r_state + '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+            prob_phi += str_r_state + "_" + str(index_of_phi) + "_" + str(stutter_scheds)
             self.addToVariableList(prob_phi)
 
             new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
@@ -1256,30 +1256,30 @@ class SemanticsEncoder:
                         if l in relevant_quantifier:
                             l_index = relevant_quantifier.index(l)
                             succ_state = cs[l_index][0]
-                            prob_succ += '_' + succ_state
-                            holds_succ += '_' + succ_state
-                            d_succ += '_' + succ_state
+                            prob_succ += "_" + succ_state
+                            holds_succ += "_" + succ_state
+                            d_succ += "_" + succ_state
                             product *= RealVal(cs[l_index][1]).as_fraction()
                             product *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                             sched_prob *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                         else:
-                            prob_succ += '_' + str((0, 0))
-                            holds_succ += '_' + str((0, 0))
-                            d_succ += '_' + str((0, 0))
-                        d_current += '_' + str(r_state[l - 1])
+                            prob_succ += "_" + str((0, 0))
+                            holds_succ += "_" + str((0, 0))
+                            d_succ += "_" + str((0, 0))
+                        d_current += "_" + str(r_state[l - 1])
 
-                    prob_succ += '_' + str(index_of_phi) + "_" + str(stutter_scheds)
+                    prob_succ += "_" + str(index_of_phi) + "_" + str(stutter_scheds)
                     self.addToVariableList(prob_succ)
                     product *= self.dictOfReals[prob_succ]
                     sum_of_probs += product
                     self.no_of_subformula += 1
 
                     # loop condition
-                    holds_succ += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                    holds_succ += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                     self.addToVariableList(holds_succ)
-                    d_current += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                    d_current += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                     self.addToVariableList(d_current)
-                    d_succ += '_' + str(index_of_phi1) + "_" + str(stutter_scheds)
+                    d_succ += "_" + str(index_of_phi1) + "_" + str(stutter_scheds)
                     self.addToVariableList(d_succ)
                     loop_condition_list.append(And(sched_prob > 0,
                                               Or(Not(self.dictOfBools[holds_succ]),

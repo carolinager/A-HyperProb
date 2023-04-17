@@ -269,8 +269,13 @@ class ModelChecker:
                 if li.name()[0] == 'h':
                     parts = li.name().split("_")
                     if parts[-2] == '0' and z3model[li]:
-                        state_tuple_list = [parts[1+i][1] for i in range(self.no_of_stutter_quantifier)]
-                        set_of_holds.add(tuple(state_tuple_list))
+                        take_this = True
+                        for i in range(self.no_of_stutter_quantifier):
+                            if parts[1+i][-2] != '0':
+                                take_this = False
+                        if take_this:
+                            state_tuple_list = [parts[1+i][1] for i in range(self.no_of_stutter_quantifier)]
+                            set_of_holds.add(tuple(state_tuple_list))
                 elif li.name()[0] == 'a' and len(li.name()) == 3:
                     list_of_actions[int(li.name()[2:])] = z3model[li]
         if truth.r == 1:
