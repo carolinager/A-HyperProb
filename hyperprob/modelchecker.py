@@ -291,7 +291,7 @@ class ModelChecker:
         if scheduler_quantifier == 'exists':
             if smt_result:
                 # todo somehow also output stutter-scheduler?
-                common.colouroutput("The property HOLDS!")
+                common.colouroutput("The property HOLDS!") 
                 print("\nThe values of variables of the witness are:")
                 print("\nIf both actions are available at a state:")
                 for i in range(0, len(actions)):
