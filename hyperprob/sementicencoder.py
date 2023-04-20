@@ -577,7 +577,8 @@ class SemanticsEncoder:
             return relevant_quantifier, relevant_quantifier_stu, encoding
 
         elif hyperproperty.data == 'constant_probability':
-            constant = RealVal(hyperproperty.children[0].value).as_fraction().limit_denominator(10000)
+            #constant = RealVal(hyperproperty.children[0].value).as_fraction().limit_denominator(10000)
+            constant = RealVal(hyperproperty.children[0].value)
             index_of_phi = self.list_of_subformula.index(hyperproperty)
             name = "prob"
             r_state = [(0, 0) for _ in range(self.no_of_stutter_quantifier)]
@@ -1171,18 +1172,18 @@ class SemanticsEncoder:
 
         return relevant_quantifier, rel_quant1, rel_quant2, relevant_quantifier_stu, rel_quant_stu1, rel_quant_stu2, encoding
 
-    def encodeFutureSemantics(self, hyperproperty, stutter_scheds, relevant_quantifier=[]):
+    def encodeFutureSemantics(self, hyperproperty, stutter_scheds, prev_relevant_quantifier=[]):
         phi1 = hyperproperty.children[0].children[0]
         index_of_phi1 = self.list_of_subformula.index(phi1)
         index_of_phi = self.list_of_subformula.index(hyperproperty)
-        rel_quant1, rel_quant_stu1, encoding = self.encodeSemantics(phi1, stutter_scheds)
+        relevant_quantifier, rel_quant_stu1, encoding = self.encodeSemantics(phi1, stutter_scheds, prev_relevant_quantifier)
 
-        relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant1)
+        # relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant1)
         combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
 
         relevant_quantifier_stu = copy.deepcopy(relevant_quantifier)
-        stutter_scheds0 = self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu)
         stutter_scheds1 = self.genRelStutterscheds(stutter_scheds, rel_quant_stu1)
+        stutter_scheds0 = self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu)
 
         for r_state in combined_state_list:
             # encode cases where we know probability is 1 and require probs variables to be in [0,1]
@@ -1192,8 +1193,7 @@ class SemanticsEncoder:
                 str_r_state += "_" + str(ind)
             holds1 += str_r_state + "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
             self.addToVariableList(holds1)
-            prob_phi = 'prob'
-            prob_phi += str_r_state + "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
+            prob_phi = 'prob' + str_r_state + "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
             self.addToVariableList(prob_phi)
 
             new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
@@ -1233,7 +1233,7 @@ class SemanticsEncoder:
                     product = RealVal(1).as_fraction()
                     sched_prob = RealVal(1).as_fraction()
 
-                    for l in range(1, self.no_of_state_quantifier + 1):
+                    for l in range(1, self.no_of_stutter_quantifier + 1):
                         if l in relevant_quantifier:
                             l_index = relevant_quantifier.index(l)
                             succ_state = cs[l_index][0]
@@ -1249,7 +1249,7 @@ class SemanticsEncoder:
                             d_succ += "_" + str((0, 0))
                         d_current += "_" + str(r_state[l - 1])
 
-                    prob_succ += "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
+                    prob_succ += "_" + str(index_of_phi) + "_" + str(stutter_scheds1)
                     self.addToVariableList(prob_succ)
                     product *= self.dictOfReals[prob_succ]
                     sum_of_probs += product

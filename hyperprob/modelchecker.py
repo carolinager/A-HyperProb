@@ -288,6 +288,9 @@ class ModelChecker:
 
     def checkResult(self):
         starting_time = time.perf_counter()
+        f = open("solver1.txt", "w")
+        f.write(self.solver.to_smt2().__str__())
+        f.close()
         truth = self.solver.check()
         z3_time = time.perf_counter() - starting_time
         list_of_actions = None
