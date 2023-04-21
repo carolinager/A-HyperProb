@@ -24,7 +24,10 @@ def main():
             else:
                 stutterLength = 1
             model.parseModel(True)
-            modelchecker = ModelChecker(model, hyperproperty, stutterLength)
+            if input_args.dontRestrictSched:
+                modelchecker = ModelChecker(model, hyperproperty, stutterLength, True)
+            else:
+                modelchecker = ModelChecker(model, hyperproperty, stutterLength, False)
             modelchecker.modelCheck()
         print("\n")
     except Exception as err:

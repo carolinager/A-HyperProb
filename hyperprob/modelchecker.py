@@ -11,7 +11,7 @@ from hyperprob.sementicencoder import SemanticsEncoder
 
 
 class ModelChecker:
-    def __init__(self, model, hyperproperty, lengthOfStutter):
+    def __init__(self, model, hyperproperty, lengthOfStutter, dontRestrictSched=False):
         self.model = model
         self.initial_hyperproperty = hyperproperty  # object of property class
         self.solver = Solver()
@@ -25,6 +25,7 @@ class ModelChecker:
         self.no_of_stutter_quantifier = 0
         self.stutter_state_mapping = None  # value at index of stutter variable is the corresponding state variable
         self.dict_pair_index = dict() # dictionary mapping all state-action-pairs to their index in the tuples representing the stutter-schedulers
+        self.dontRestrictSched = dontRestrictSched
 
     def modelCheck(self):
         non_quantified_property, self.no_of_state_quantifier, state_indices = propertyparser.checkStateQuantifiers(
@@ -52,64 +53,57 @@ class ModelChecker:
             self.addToSubformulaList(negated_non_quantified_property)
             self.truth(combined_list_of_states_with_initial_stutter)
             smt_end_time = time.perf_counter() - start_time
+            print("Finished Checking")
             self.printResult(smt_end_time, 'forall')
 
     def encodeActions(self):
-        # encode global, state-independent scheduler probabilities for the actions
-        set_of_actions = set(itertools.chain.from_iterable(self.model.getDictOfActions().values()))
-        if len(set_of_actions) > 2:
-            raise ValueError(f"Model contains more than 2 different actions.")
-        scheduler_restrictions = []
-        sum_over_probs = []
+        if self.dontRestrictSched:
+            # probabilistic scheduler without extra restrictions:
+            scheduler_probs = []
+            for state in self.model.parsed_model.states:
+                name = "a_" + str(state.id) + "_"  # a_s_x is probability of action x in state s
+                sum_of_probs = RealVal(0)
+                for act in state.actions:
+                    name_a = name + str(act.id)
+                    self.addToVariableList(name_a)
+                    sum_of_probs += self.dictOfReals[name_a]
+                scheduler_probs.append(sum_of_probs == RealVal(1))
+            self.solver.add(And(scheduler_probs))
+            self.no_of_subformula += 1
+        else:
+            # encode global, state-independent scheduler probabilities for the actions
+            set_of_actions = set(itertools.chain.from_iterable(self.model.getDictOfActions().values()))
+            if len(set_of_actions) > 2:
+                raise ValueError(f"Model contains more than 2 different actions.")
+            scheduler_restrictions = []
+            sum_over_probs = []
 
-        for action in set_of_actions:
-            name = "a_" + str(action)  # a_x is probability of action x
-            self.addToVariableList(name)
-            scheduler_restrictions.append(self.dictOfReals[name] >= RealVal(0))
-            scheduler_restrictions.append(self.dictOfReals[name] <= RealVal(1))
-            sum_over_probs.append(self.dictOfReals[name])
-        scheduler_restrictions.append(Sum(sum_over_probs) == RealVal(1))
-        self.solver.add(And(scheduler_restrictions))
-        self.no_of_subformula += 1
-
-        # encode scheduler probabilities for each state
-        state_scheduler_probs = []
-        for state in self.model.parsed_model.states:
-            name = "a_" + str(state.id) + "_"  # a_s_x is probability of action x in state s
-            available_actions = list(state.actions)
-            if len(available_actions) == 1:
-                name += str(available_actions[0].id)
+            for action in set_of_actions:
+                name = "a_" + str(action)  # a_x is probability of action x
                 self.addToVariableList(name)
-                state_scheduler_probs.append(self.dictOfReals[name] == RealVal(1))  # todo float(1) ??
-            elif len(available_actions) == 2:
-                for action in available_actions:
-                    name_x = name + str(action.id)
-                    self.addToVariableList(name_x)
-                    state_scheduler_probs.append(self.dictOfReals[name_x] == self.dictOfReals["a_" + str(action.id)])
-        self.solver.add(And(state_scheduler_probs))
-        self.no_of_subformula += 1
+                scheduler_restrictions.append(self.dictOfReals[name] >= RealVal(0))
+                scheduler_restrictions.append(self.dictOfReals[name] <= RealVal(1))
+                sum_over_probs.append(self.dictOfReals[name])
+            scheduler_restrictions.append(Sum(sum_over_probs) == RealVal(1))
+            self.solver.add(And(scheduler_restrictions))
+            self.no_of_subformula += 1
 
-        """
-        state_scheduler_probs = []
-        for state in self.model.parsed_model.states:
-            name = "a_" + str(state.id) + "_"  # a_s_x is probability of action x in state s
-            sum_of_probs = RealVal(0)
-            for act in state.actions:
-                name_a = name + str(act.id)
-                self.addToVariableList(name_a)
-
-            if len(available_actions) == 1:
-                name += str(available_actions[0].id)
-                self.addToVariableList(name)
-                state_scheduler_probs.append(self.dictOfReals[name] == 1)  # todo float(1) ??
-            elif len(available_actions) == 2:
-                for action in available_actions:
-                    name_x = name + str(action.id)
-                    self.addToVariableList(name_x)
-                    state_scheduler_probs.append(self.dictOfReals[name_x] == self.dictOfReals["a_" + str(action.id)])
-        self.solver.add(And(state_scheduler_probs))
-        self.no_of_subformula += 1
-        """
+            # encode scheduler probabilities for each state
+            state_scheduler_probs = []
+            for state in self.model.parsed_model.states:
+                name = "a_" + str(state.id) + "_"  # a_s_x is probability of action x in state s
+                available_actions = list(state.actions)
+                if len(available_actions) == 1:
+                    name += str(available_actions[0].id)
+                    self.addToVariableList(name)
+                    state_scheduler_probs.append(self.dictOfReals[name] == RealVal(1))  # todo float(1) ??
+                elif len(available_actions) == 2:
+                    for action in available_actions:
+                        name_x = name + str(action.id)
+                        self.addToVariableList(name_x)
+                        state_scheduler_probs.append(self.dictOfReals[name_x] == self.dictOfReals["a_" + str(action.id)])
+            self.solver.add(And(state_scheduler_probs))
+            self.no_of_subformula += 1
 
         common.colourinfo("Encoded actions in the MDP...")
 
@@ -327,6 +321,7 @@ class ModelChecker:
         set_of_holds = set()
         xlist = []
         if truth == sat:
+            print("SAT")
             z3model = self.solver.model()
             list_of_actions = [None] * self.model.getNumberOfActions()
             for li in z3model:
@@ -350,8 +345,10 @@ class ModelChecker:
             return False, list_of_actions, set_of_holds, self.solver.statistics(), z3_time
 
     def printResult(self, smt_end_time, scheduler_quantifier):
+        print("Number of subformulas: " + str(self.no_of_subformula))
         common.colourinfo("Checking...", False)
         smt_result, actions, holds, statistics, z3_time = self.checkResult()
+        common.colourinfo("Finished checking!", False)
         # todo dont distinguish output by scheduler_quantifier? since we have many alternating quantifiers
         if scheduler_quantifier == 'exists':
             if smt_result:
