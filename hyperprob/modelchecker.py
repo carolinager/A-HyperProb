@@ -315,6 +315,10 @@ class ModelChecker:
         f = open("solver1.txt", "w")
         f.write(self.solver.to_smt2().__str__())
         f.close()
+
+        smtlib_string = self.solver.to_smt2()
+        # todo do sth with pysmt ?
+
         truth = self.solver.check()
         z3_time = time.perf_counter() - starting_time
         list_of_actions = None # todo change
