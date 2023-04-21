@@ -1249,7 +1249,7 @@ class SemanticsEncoder:
                             d_succ += "_" + str((0, 0))
                         d_current += "_" + str(r_state[l - 1])
 
-                    prob_succ += "_" + str(index_of_phi) + "_" + str(stutter_scheds1)
+                    prob_succ += "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
                     self.addToVariableList(prob_succ)
                     product *= self.dictOfReals[prob_succ]
                     sum_of_probs += product
