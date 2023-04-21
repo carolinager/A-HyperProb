@@ -577,8 +577,9 @@ class SemanticsEncoder:
             return relevant_quantifier, relevant_quantifier_stu, encoding
 
         elif hyperproperty.data == 'constant_probability':
-            #constant = RealVal(hyperproperty.children[0].value).as_fraction().limit_denominator(10000)
+            #constant = RealVal(hyperproperty.children[0].value).limit_denominator(10000)
             constant = RealVal(hyperproperty.children[0].value)
+            #constant = hyperproperty.children[0].value # str, also seems to work??
             index_of_phi = self.list_of_subformula.index(hyperproperty)
             name = "prob"
             r_state = [(0, 0) for _ in range(self.no_of_stutter_quantifier)]
@@ -744,9 +745,9 @@ class SemanticsEncoder:
             prob_phi = 'prob' + str_r_state + "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
             self.addToVariableList(prob_phi)
             first_and = Or(
-                And(self.dictOfReals[holdsToInt1] == float(1),
+                And(self.dictOfReals[holdsToInt1] == RealVal(1),
                     self.dictOfBools[holds1]),
-                And(self.dictOfReals[holdsToInt1] == float(0),
+                And(self.dictOfReals[holdsToInt1] == RealVal(0),
                     Not(self.dictOfBools[holds1])))
             self.no_of_subformula += 3
             encoding.append(first_and)
@@ -758,7 +759,7 @@ class SemanticsEncoder:
             combined_acts = list(itertools.product(*dicts_act))
 
             # calculate probability of Next phi1
-            sum_of_probs = RealVal(0).as_fraction()
+            sum_of_probs = RealVal(0)
             for ca in combined_acts:
                 # create list of successors of r_state with probabilities under currently considered stuttering and actions
                 # list entries are tuples (l_1, ... l_n) where l_i = (s, p) where
@@ -769,14 +770,14 @@ class SemanticsEncoder:
                 # calculate probability based on probabilities that phi1 holds in the successor states
                 for cs in combined_succ:
                     holdsToInt_succ = 'holdsToInt'
-                    product = RealVal(1).as_fraction()
+                    product = RealVal(1)
 
                     for l in range(1, self.no_of_stutter_quantifier + 1):
                         if l in relevant_quantifier:
                             l_index = relevant_quantifier.index(l)
                             succ_state = cs[l_index][0]
                             holdsToInt_succ += "_" + succ_state
-                            product *= RealVal(cs[l_index][1]).as_fraction()
+                            product *= RealVal(cs[l_index][1])
                             product *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                         else:
                             holdsToInt_succ += "_" + str((0, 0))
@@ -838,16 +839,17 @@ class SemanticsEncoder:
             prob_phi += "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
             self.addToVariableList(prob_phi)
 
-            new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
-            new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+            #new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
+            #new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
 
             first_implies = And(Implies(self.dictOfBools[holds2],
-                                        (self.dictOfReals[prob_phi] == float(1))),
+                                        (self.dictOfReals[prob_phi] == RealVal(1))),
                                 Implies(And(Not(self.dictOfBools[holds1]),
                                             Not(self.dictOfBools[holds2])),
-                                        (self.dictOfReals[prob_phi] == float(0))),
-                                new_prob_const_0,
-                                new_prob_const_1)
+                                        (self.dictOfReals[prob_phi] == RealVal(0))),
+            #                    new_prob_const_0,
+            #                    new_prob_const_1
+                                )
             encoding.append(first_implies)
             self.no_of_subformula += 4
 
@@ -862,7 +864,7 @@ class SemanticsEncoder:
             self.no_of_subformula += 2
 
             # encode probability calculation
-            sum_of_probs = RealVal(0).as_fraction()
+            sum_of_probs = RealVal(0)
             loop_condition_list = []
             for ca in combined_acts:
                 # create list of successors of r_state with probabilities under currently considered stuttering and actions
@@ -874,8 +876,8 @@ class SemanticsEncoder:
                     holds_succ = 'holds'
                     d_current = 'd'
                     d_succ = 'd'
-                    product = RealVal(1).as_fraction()
-                    sched_prob = RealVal(1).as_fraction()
+                    product = RealVal(1)
+                    sched_prob = RealVal(1)
 
                     for l in range(1, self.no_of_state_quantifier + 1):
                         if l in relevant_quantifier:
@@ -884,7 +886,7 @@ class SemanticsEncoder:
                             prob_succ += "_" + succ_state
                             holds_succ += "_" + succ_state
                             d_succ += "_" + succ_state
-                            product *= RealVal(cs[l_index][1]).as_fraction()
+                            product *= RealVal(cs[l_index][1])
                             product *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                             sched_prob *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                         else:
@@ -906,7 +908,7 @@ class SemanticsEncoder:
                     self.addToVariableList(d_current)
                     d_succ += "_" + str(index_of_phi2) + "_" + str(stutter_scheds2)
                     self.addToVariableList(d_succ)
-                    loop_condition_list.append(And(sched_prob > 0,
+                    loop_condition_list.append(And(sched_prob > RealVal(0),
                                                    Or(self.dictOfBools[holds_succ],
                                                       self.dictOfReals[d_current] > self.dictOfReals[d_succ])
                                                    ))
@@ -914,7 +916,7 @@ class SemanticsEncoder:
 
             prob_calc_enc = self.dictOfReals[prob_phi] == sum_of_probs
             self.no_of_subformula += 1
-            loop_condition = Implies(self.dictOfReals[prob_phi] > 0,
+            loop_condition = Implies(self.dictOfReals[prob_phi] > RealVal(0),
                                      Or(loop_condition_list))
             self.no_of_subformula += 2
             implies_antecedent = And(prob_calc_enc, loop_condition)
@@ -967,9 +969,9 @@ class SemanticsEncoder:
                 self.addToVariableList(name2)
 
                 eq1 = Implies(self.dictOfBools[name2],
-                              self.dictOfReals[name1] == float(1))
+                              self.dictOfReals[name1] == RealVal(1))
                 eq2 = Implies(Not(self.dictOfBools[name2]),
-                              self.dictOfReals[name1] == float(0))
+                              self.dictOfReals[name1] == RealVal(0))
                 self.no_of_subformula += 2
                 encoding.append(And(eq1, eq2))
                 self.no_of_subformula += 1
@@ -1023,16 +1025,17 @@ class SemanticsEncoder:
                 prob_phi += "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
                 self.addToVariableList(prob_phi)
 
-                new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
-                new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+                # new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
+                # new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
 
                 first_implies = And(Implies(self.dictOfBools[holds2],
-                                            (self.dictOfReals[prob_phi] == float(1))),
+                                            (self.dictOfReals[prob_phi] == RealVal(1))),
                                     Implies(And(Not(self.dictOfBools[holds1]),
                                                 Not(self.dictOfBools[holds2])),
-                                            (self.dictOfReals[prob_phi] == float(0))),
-                                    new_prob_const_0,
-                                    new_prob_const_1)
+                                            (self.dictOfReals[prob_phi] == RealVal(0))),
+                #                    new_prob_const_0,
+                #                    new_prob_const_1
+                                    )
                 self.no_of_subformula += 4
                 encoding.append(first_implies)
 
@@ -1048,7 +1051,7 @@ class SemanticsEncoder:
                 self.no_of_subformula += 2
 
                 # encode probability calculation
-                sum_of_probs = RealVal(0).as_fraction()
+                sum_of_probs = RealVal(0)
                 for ca in combined_acts:
                     # create list of successors of r_state with probabilities under currently considered stuttering and actions
                     combined_succ = self.genSuccessors(r_state, ca, stutter_scheds0, relevant_quantifier)
@@ -1056,14 +1059,14 @@ class SemanticsEncoder:
                     # calculate probability based on probabilities that successor states satisfy the property with bounds decreased by 1
                     for cs in combined_succ:
                         prob_succ = 'prob'
-                        product = RealVal(1).as_fraction()
+                        product = RealVal(1)
 
                         for l in range(1, self.no_of_state_quantifier + 1):
                             if l in relevant_quantifier:
                                 l_index = relevant_quantifier.index(l)
                                 succ_state = cs[l_index][0]
                                 prob_succ += "_" + succ_state
-                                product *= RealVal(cs[l_index][1]).as_fraction()
+                                product *= RealVal(cs[l_index][1])
                                 product *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                             else:
                                 prob_succ += "_" + str((0, 0))
@@ -1117,13 +1120,14 @@ class SemanticsEncoder:
                 prob_phi += "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
                 self.addToVariableList(prob_phi)
 
-                new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
-                new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+                # new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
+                # new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
 
                 first_implies = And(Implies(Not(self.dictOfBools[holds1]),
-                                            (self.dictOfReals[prob_phi] == float(0))),
-                                    new_prob_const_0,
-                                    new_prob_const_1)
+                                            (self.dictOfReals[prob_phi] == RealVal(0))),
+                #                    new_prob_const_0,
+                #                    new_prob_const_1
+                                    )
                 encoding.append(first_implies)
                 self.no_of_subformula += 3
 
@@ -1138,7 +1142,7 @@ class SemanticsEncoder:
                 self.no_of_subformula += 1
 
                 # encode probability calculation
-                sum_of_probs = RealVal(0).as_fraction()
+                sum_of_probs = RealVal(0)
                 for ca in combined_acts:
                     # create list of successors of r_state with probabilities under currently considered stuttering and actions
                     combined_succ = self.genSuccessors(r_state, ca, stutter_scheds0, relevant_quantifier)
@@ -1146,14 +1150,14 @@ class SemanticsEncoder:
                     # create equation system for probabilities
                     for cs in combined_succ:
                         prob_succ = 'prob'
-                        product = RealVal(1).as_fraction()
+                        product = RealVal(1)
 
                         for l in range(1, self.no_of_state_quantifier + 1):
                             if l in relevant_quantifier:
                                 l_index = relevant_quantifier.index(l)
                                 succ_state = cs[l_index][0]
                                 prob_succ += "_" + succ_state
-                                product *= RealVal(cs[l_index][1]).as_fraction()
+                                product *= RealVal(cs[l_index][1])
                                 product *= self.dictOfReals[
                                     "a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                             else:
@@ -1196,13 +1200,14 @@ class SemanticsEncoder:
             prob_phi = 'prob' + str_r_state + "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
             self.addToVariableList(prob_phi)
 
-            new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
-            new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+            #new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
+            #new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
 
             first_implies = And(Implies(self.dictOfBools[holds1],
-                                        (self.dictOfReals[prob_phi] == float(1))),
-                                new_prob_const_0,
-                                new_prob_const_1)
+                                        (self.dictOfReals[prob_phi] == RealVal(1))),
+            #                    new_prob_const_0,
+            #                    new_prob_const_1
+                                )
             encoding.append(first_implies)
             self.no_of_subformula += 3
 
@@ -1217,7 +1222,7 @@ class SemanticsEncoder:
             self.no_of_subformula += 1
 
             # encode probability calculation
-            sum_of_probs = RealVal(0).as_fraction()
+            sum_of_probs = RealVal(0)
             loop_condition_list = []
 
             for ca in combined_acts:
@@ -1230,8 +1235,8 @@ class SemanticsEncoder:
                     holds_succ = 'holds'
                     d_current = 'd'
                     d_succ = 'd'
-                    product = RealVal(1).as_fraction()
-                    sched_prob = RealVal(1).as_fraction()
+                    product = RealVal(1)
+                    sched_prob = RealVal(1)
 
                     for l in range(1, self.no_of_stutter_quantifier + 1):
                         if l in relevant_quantifier:
@@ -1240,7 +1245,7 @@ class SemanticsEncoder:
                             prob_succ += "_" + succ_state
                             holds_succ += "_" + succ_state
                             d_succ += "_" + succ_state
-                            product *= RealVal(cs[l_index][1]).as_fraction()
+                            product *= RealVal(cs[l_index][1])
                             product *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                             sched_prob *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                         else:
@@ -1258,11 +1263,11 @@ class SemanticsEncoder:
                     # loop condition
                     holds_succ += "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
                     self.addToVariableList(holds_succ)
-                    d_current += "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
+                    d_current += "_" + str(index_of_phi1) + "_" + str(stutter_scheds1) # todo stutter_scheds1 or 0 ??
                     self.addToVariableList(d_current)
                     d_succ += "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
                     self.addToVariableList(d_succ)
-                    loop_condition_list.append(And(sched_prob > 0,
+                    loop_condition_list.append(And(sched_prob > RealVal(0),
                                                    Or(self.dictOfBools[holds_succ],
                                                       self.dictOfReals[d_current] > self.dictOfReals[d_succ])
                                                    ))
@@ -1270,7 +1275,7 @@ class SemanticsEncoder:
 
             prob_calc_enc = self.dictOfReals[prob_phi] == sum_of_probs
             self.no_of_subformula += 1
-            loop_condition = Implies(self.dictOfReals[prob_phi] > 0,
+            loop_condition = Implies(self.dictOfReals[prob_phi] > RealVal(0),
                                      Or(loop_condition_list))
             self.no_of_subformula += 2
             implies_antecedent = And(prob_calc_enc, loop_condition)
@@ -1304,13 +1309,14 @@ class SemanticsEncoder:
             prob_phi += str_r_state + "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
             self.addToVariableList(prob_phi)
 
-            new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
-            new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+            # new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
+            # new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
 
             first_implies = And(Implies((Not(self.dictOfBools[holds1])),
-                                        (self.dictOfReals[prob_phi] == float(0))),
-                                new_prob_const_0,
-                                new_prob_const_1)
+                                        (self.dictOfReals[prob_phi] == RealVal(0))),
+            #                    new_prob_const_0,
+            #                    new_prob_const_1
+                                )
             encoding.append(first_implies)
             self.no_of_subformula += 1
 
@@ -1324,7 +1330,7 @@ class SemanticsEncoder:
             implies_precedent = self.dictOfBools[holds1]
             self.no_of_subformula += 1
 
-            sum_of_probs = RealVal(0).as_fraction()
+            sum_of_probs = RealVal(0)
             loop_condition_list = []
 
             for ca in combined_acts:
@@ -1337,8 +1343,8 @@ class SemanticsEncoder:
                     holds_succ = 'holds'
                     d_current = 'd'
                     d_succ = 'd'
-                    product = RealVal(1).as_fraction()
-                    sched_prob = RealVal(1).as_fraction()
+                    product = RealVal(1)
+                    sched_prob = RealVal(1)
 
                     for l in range(1, self.no_of_state_quantifier + 1):
                         if l in relevant_quantifier:
@@ -1347,7 +1353,7 @@ class SemanticsEncoder:
                             prob_succ += "_" + succ_state
                             holds_succ += "_" + succ_state
                             d_succ += "_" + succ_state
-                            product *= RealVal(cs[l_index][1]).as_fraction()
+                            product *= RealVal(cs[l_index][1])
                             product *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                             sched_prob *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                         else:
@@ -1369,7 +1375,7 @@ class SemanticsEncoder:
                     self.addToVariableList(d_current)
                     d_succ += "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
                     self.addToVariableList(d_succ)
-                    loop_condition_list.append(And(sched_prob > 0,
+                    loop_condition_list.append(And(sched_prob > RealVal(0),
                                                    Or(Not(self.dictOfBools[holds_succ]),
                                                       self.dictOfReals[d_current] > self.dictOfReals[d_succ])
                                                    ))
@@ -1377,7 +1383,7 @@ class SemanticsEncoder:
 
             prob_calc_enc = self.dictOfReals[prob_phi] == sum_of_probs
             self.no_of_subformula += 1
-            loop_condition = Implies(self.dictOfReals[prob_phi] < 1,
+            loop_condition = Implies(self.dictOfReals[prob_phi] < RealVal(1),
                                      Or(loop_condition_list))
             self.no_of_subformula += 2
             implies_antecedent = And(prob_calc_enc, loop_condition)

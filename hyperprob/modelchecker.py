@@ -65,10 +65,10 @@ class ModelChecker:
         for action in set_of_actions:
             name = "a_" + str(action)  # a_x is probability of action x
             self.addToVariableList(name)
-            scheduler_restrictions.append(self.dictOfReals[name] >= 0)
-            scheduler_restrictions.append(self.dictOfReals[name] <= 1)
+            scheduler_restrictions.append(self.dictOfReals[name] >= RealVal(0))
+            scheduler_restrictions.append(self.dictOfReals[name] <= RealVal(1))
             sum_over_probs.append(self.dictOfReals[name])
-        scheduler_restrictions.append(Sum(sum_over_probs) == 1)
+        scheduler_restrictions.append(Sum(sum_over_probs) == RealVal(1))
         self.solver.add(And(scheduler_restrictions))
         self.no_of_subformula += 1
 
@@ -80,6 +80,27 @@ class ModelChecker:
             if len(available_actions) == 1:
                 name += str(available_actions[0].id)
                 self.addToVariableList(name)
+                state_scheduler_probs.append(self.dictOfReals[name] == RealVal(1))  # todo float(1) ??
+            elif len(available_actions) == 2:
+                for action in available_actions:
+                    name_x = name + str(action.id)
+                    self.addToVariableList(name_x)
+                    state_scheduler_probs.append(self.dictOfReals[name_x] == self.dictOfReals["a_" + str(action.id)])
+        self.solver.add(And(state_scheduler_probs))
+        self.no_of_subformula += 1
+
+        """
+        state_scheduler_probs = []
+        for state in self.model.parsed_model.states:
+            name = "a_" + str(state.id) + "_"  # a_s_x is probability of action x in state s
+            sum_of_probs = RealVal(0)
+            for act in state.actions:
+                name_a = name + str(act.id)
+                self.addToVariableList(name_a)
+
+            if len(available_actions) == 1:
+                name += str(available_actions[0].id)
+                self.addToVariableList(name)
                 state_scheduler_probs.append(self.dictOfReals[name] == 1)  # todo float(1) ??
             elif len(available_actions) == 2:
                 for action in available_actions:
@@ -88,6 +109,8 @@ class ModelChecker:
                     state_scheduler_probs.append(self.dictOfReals[name_x] == self.dictOfReals["a_" + str(action.id)])
         self.solver.add(And(state_scheduler_probs))
         self.no_of_subformula += 1
+        """
+
         common.colourinfo("Encoded actions in the MDP...")
 
 
@@ -231,6 +254,13 @@ class ModelChecker:
             # todo introduce some dummy variable t_stutter_scheds s.t.  t_stutter_scheds iff encoding(stutter_scheds)
             # only for outputting purposes
         common.colourinfo("Finished encoding non-quantified formula...", False)
+
+        list_of_prob_restrict = []
+        for name in self.dictOfReals.keys():
+            if name[0] == 'p':
+                list_of_prob_restrict.append(self.dictOfReals[name] >= RealVal(0))
+                list_of_prob_restrict.append(self.dictOfReals[name] <= RealVal(1))
+        self.solver.add(And(list_of_prob_restrict))
 
         # create list of holds_(s1,0)_..._0 for all state combinations and for all relevant stutter-scheds
         list_of_holds_and_enc = []
