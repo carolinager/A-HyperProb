@@ -3,7 +3,9 @@ import time
 import itertools
 
 from lark import Tree
-from z3 import Solver, Bool, Real, Int, Or, sat, And, Implies, RealVal, Sum
+# from z3 import Solver, Bool, Real, Int, Or, sat, And, Implies, RealVal, Sum
+
+from cvc5.pythonic import *
 
 from hyperprob.utility import common
 from hyperprob import propertyparser
@@ -254,7 +256,8 @@ class ModelChecker:
             if name[0] == 'p':
                 list_of_prob_restrict.append(self.dictOfReals[name] >= RealVal(0))
                 list_of_prob_restrict.append(self.dictOfReals[name] <= RealVal(1))
-        self.solver.add(And(list_of_prob_restrict))
+        self.solver.add(list_of_prob_restrict)
+        self.no_of_subformula += 1
 
         # create list of holds_(s1,0)_..._0 for all state combinations and for all relevant stutter-scheds
         list_of_holds_and_enc = []
@@ -267,7 +270,7 @@ class ModelChecker:
             for stutter_scheds in combined_stutterscheds_rel:
                 name_s = name + "_" + str(dict_of_rel_stutterscheds[stutter_scheds])
                 self.addToVariableList(name_s)
-                list_of_holds_and_enc.append(And(self.dictOfBools[name_s], And(dict_of_encodings[stutter_scheds])))
+                list_of_holds_and_enc.append(And(self.dictOfBools[name_s], And(dict_of_encodings[stutter_scheds]))) # TODO this doesnt work with cvc5
             self.no_of_subformula += 2
 
         # encode stutter scheduler quantifiers (for each possible assignment of the state variables)
@@ -316,8 +319,28 @@ class ModelChecker:
         f.write(self.solver.to_smt2().__str__())
         f.close()
 
-        smtlib_string = self.solver.to_smt2()
-        # todo do sth with pysmt ?
+        # print("pysmt start")
+        # smtlib_string = self.solver.to_smt2()
+        # model = get_model(smtlib_string)
+        # if model:
+        #     print("pysmt found a solution")
+        #     print(model)
+        # else:
+        #     print("pysmt didnt find a solution")
+        # print("pysmt end")
+
+        # print("yices")
+        # name = "yices"
+        # path = ["~/.smt_solvers/yices"]  # Path to the solver
+        # logics = [QF_NRA]
+        # env = get_env()
+        # # env.factory.add_generic_solver(name, path, logics)
+        # with pysmt.shortcuts.Solver(name=name, logic=QF_NRA) as s:
+        #     res = s.solve()
+        #     print(res)
+        #     if res:
+        #         m = s.model()
+        #         print(m)
 
         truth = self.solver.check()
         z3_time = time.perf_counter() - starting_time
