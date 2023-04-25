@@ -2,8 +2,9 @@ import copy
 import itertools
 
 from lark import Tree, Token
-from z3 import And, Bool, Real, Int, Not, Or, Xor, RealVal, Implies
+# from z3 import And, Bool, Real, Int, Not, Or, Xor, RealVal, Implies
 
+from cvc5.pythonic import *
 
 def extendWithoutDuplicates(list1, list2):
     result = []
@@ -99,7 +100,7 @@ class SemanticsEncoder:
                     and_for_yes.add(self.dictOfBools[name])
                 else:
                     and_for_no.add(Not(self.dictOfBools[name]))
-            encoding.append(And(And(and_for_yes), And(and_for_no)))
+            encoding.append(And(And(list(and_for_yes)), And(list(and_for_no))))
             self.no_of_subformula += 3
             and_for_yes.clear()
             and_for_no.clear()
@@ -843,12 +844,10 @@ class SemanticsEncoder:
             #new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
 
             first_implies = And(Implies(self.dictOfBools[holds2],
-                                        (self.dictOfReals[prob_phi] == RealVal(1))),
+                                        self.dictOfReals[prob_phi] == RealVal(1)),
                                 Implies(And(Not(self.dictOfBools[holds1]),
                                             Not(self.dictOfBools[holds2])),
-                                        (self.dictOfReals[prob_phi] == RealVal(0))),
-            #                    new_prob_const_0,
-            #                    new_prob_const_1
+                                        self.dictOfReals[prob_phi] == RealVal(0))
                                 )
             encoding.append(first_implies)
             self.no_of_subformula += 4
@@ -916,8 +915,12 @@ class SemanticsEncoder:
 
             prob_calc_enc = self.dictOfReals[prob_phi] == sum_of_probs
             self.no_of_subformula += 1
+            if len(loop_condition_list) == 1:
+                loop_condition_post = loop_condition_list[0]
+            else:
+                loop_condition_post = Or(loop_condition_list)
             loop_condition = Implies(self.dictOfReals[prob_phi] > RealVal(0),
-                                     Or(loop_condition_list))
+                                     loop_condition_post)
             self.no_of_subformula += 2
             implies_antecedent = And(prob_calc_enc, loop_condition)
             self.no_of_subformula += 1
@@ -1029,12 +1032,10 @@ class SemanticsEncoder:
                 # new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
 
                 first_implies = And(Implies(self.dictOfBools[holds2],
-                                            (self.dictOfReals[prob_phi] == RealVal(1))),
+                                            self.dictOfReals[prob_phi] == RealVal(1)),
                                     Implies(And(Not(self.dictOfBools[holds1]),
                                                 Not(self.dictOfBools[holds2])),
-                                            (self.dictOfReals[prob_phi] == RealVal(0))),
-                #                    new_prob_const_0,
-                #                    new_prob_const_1
+                                            self.dictOfReals[prob_phi] == RealVal(0))
                                     )
                 self.no_of_subformula += 4
                 encoding.append(first_implies)
@@ -1124,9 +1125,7 @@ class SemanticsEncoder:
                 # new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
 
                 first_implies = And(Implies(Not(self.dictOfBools[holds1]),
-                                            (self.dictOfReals[prob_phi] == RealVal(0))),
-                #                    new_prob_const_0,
-                #                    new_prob_const_1
+                                            self.dictOfReals[prob_phi] == RealVal(0))
                                     )
                 encoding.append(first_implies)
                 self.no_of_subformula += 3
@@ -1203,11 +1202,8 @@ class SemanticsEncoder:
             #new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
             #new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
 
-            first_implies = And(Implies(self.dictOfBools[holds1],
-                                        (self.dictOfReals[prob_phi] == RealVal(1))),
-            #                    new_prob_const_0,
-            #                    new_prob_const_1
-                                )
+            first_implies = Implies(self.dictOfBools[holds1],
+                                        (self.dictOfReals[prob_phi] == RealVal(1)))
             encoding.append(first_implies)
             self.no_of_subformula += 3
 
@@ -1275,8 +1271,12 @@ class SemanticsEncoder:
 
             prob_calc_enc = self.dictOfReals[prob_phi] == sum_of_probs
             self.no_of_subformula += 1
+            if len(loop_condition_list) == 1:
+                loop_condition_post = loop_condition_list[0]
+            else:
+                loop_condition_post = Or(loop_condition_list)
             loop_condition = Implies(self.dictOfReals[prob_phi] > RealVal(0),
-                                     Or(loop_condition_list))
+                                     loop_condition_post)
             self.no_of_subformula += 2
             implies_antecedent = And(prob_calc_enc, loop_condition)
             self.no_of_subformula += 1
@@ -1312,11 +1312,8 @@ class SemanticsEncoder:
             # new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
             # new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
 
-            first_implies = And(Implies((Not(self.dictOfBools[holds1])),
-                                        (self.dictOfReals[prob_phi] == RealVal(0))),
-            #                    new_prob_const_0,
-            #                    new_prob_const_1
-                                )
+            first_implies = Implies((Not(self.dictOfBools[holds1])),
+                                    self.dictOfReals[prob_phi] == RealVal(0))
             encoding.append(first_implies)
             self.no_of_subformula += 1
 
@@ -1383,8 +1380,12 @@ class SemanticsEncoder:
 
             prob_calc_enc = self.dictOfReals[prob_phi] == sum_of_probs
             self.no_of_subformula += 1
+            if len(loop_condition_list) == 1:
+                loop_condition_post = loop_condition_list[0]
+            else:
+                loop_condition_post = Or(loop_condition_list)
             loop_condition = Implies(self.dictOfReals[prob_phi] < RealVal(1),
-                                     Or(loop_condition_list))
+                                     loop_condition_post)
             self.no_of_subformula += 2
             implies_antecedent = And(prob_calc_enc, loop_condition)
             self.no_of_subformula += 1
