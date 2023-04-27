@@ -74,37 +74,41 @@ class ModelChecker:
             self.no_of_subformula += 1
         else:
             # encode global, state-independent scheduler probabilities for the actions
-            set_of_actions = set(itertools.chain.from_iterable(self.model.getDictOfActions().values()))
-            if len(set_of_actions) > 2:
-                raise ValueError(f"Model contains more than 2 different actions.")
+            set_of_actionsets = {frozenset(x) for x in self.model.getDictOfActions().values()}
             scheduler_restrictions = []
-            sum_over_probs = []
 
-            for action in set_of_actions:
-                name = "a_" + str(action)  # a_x is probability of action x
-                self.addToVariableList(name)
-                scheduler_restrictions.append(self.dictOfReals[name] >= RealVal(0))
-                scheduler_restrictions.append(self.dictOfReals[name] <= RealVal(1))
-                sum_over_probs.append(self.dictOfReals[name])
-            scheduler_restrictions.append(Sum(sum_over_probs) == RealVal(1))
-            self.solver.add(And(scheduler_restrictions))
-            self.no_of_subformula += 1
-
-            # encode scheduler probabilities for each state
-            state_scheduler_probs = []
-            for state in self.model.parsed_model.states:
-                name = "a_" + str(state.id) + "_"  # a_s_x is probability of action x in state s
-                available_actions = list(state.actions)
-                if len(available_actions) == 1:
-                    name += str(available_actions[0].id)
+            for A in set_of_actionsets:
+                sum_over_probs = []
+                if len(A) == 1:
+                    action = list(A)[0]
+                    name = "a_" + str(set(A)) + "_" + str(action)
                     self.addToVariableList(name)
-                    state_scheduler_probs.append(self.dictOfReals[name] == RealVal(1))  # todo float(1) ??
-                elif len(available_actions) == 2:
-                    for action in available_actions:
-                        name_x = name + str(action.id)
-                        self.addToVariableList(name_x)
-                        state_scheduler_probs.append(self.dictOfReals[name_x] == self.dictOfReals["a_" + str(action.id)])
-            self.solver.add(state_scheduler_probs)
+                    scheduler_restrictions.append(self.dictOfReals[name] == RealVal(1))
+                else:
+                    for action in A:
+                        name = "a_" + str(set(A)) + "_" + str(action)  # a_A_x is probability of action x at a state with enabled actions A
+                        self.addToVariableList(name)
+                        scheduler_restrictions.append(self.dictOfReals[name] >= RealVal(0))
+                        scheduler_restrictions.append(self.dictOfReals[name] <= RealVal(1))
+                        sum_over_probs.append(self.dictOfReals[name])
+                    scheduler_restrictions.append(Sum(sum_over_probs) == RealVal(1))
+
+            # todo: if we remove dontRestrictSched then replace a_s_x by a_A_x everywhere in semantic encoding instead of doing the following
+            for state in self.model.parsed_model.states:
+                name_s = "a_" + str(state.id) + "_"  # a_s_x is probability of action x in state s
+                name_A = "a_" + str(set([a.id for a in state.actions])) + "_"
+                sum_of_probs = RealVal(0)
+                for act in state.actions:
+                    name_s_a = name_s + str(act.id)
+                    name_A_a = name_A + str(act.id)
+                    self.addToVariableList(name_s_a)
+                    sum_of_probs += self.dictOfReals[name_s_a]
+                    scheduler_restrictions.append(self.dictOfReals[name_s_a] == self.dictOfReals[name_A_a])
+
+            if len(scheduler_restrictions) == 1:
+                self.solver.add(scheduler_restrictions[0])
+            else:
+                self.solver.add(And(scheduler_restrictions))
             self.no_of_subformula += 1
 
         common.colourinfo("Encoded actions in the MDP...")
