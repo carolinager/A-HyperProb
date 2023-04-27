@@ -210,6 +210,7 @@ class ModelChecker:
                 changed_hyperproperty = changed_hyperproperty.children[0]
             else:
                 break
+        common.colourinfo("Traversed all quantifiers", False)
         # TODO: read and track relevant quantifiers ->  Done in a way
 
         # changed_hyperproperty is now phi^nq, the outermost non-quantified formula
@@ -225,7 +226,9 @@ class ModelChecker:
         combined_stutterscheds = list(itertools.product(possible_stutterings, repeat=self.no_of_stutter_quantifier))
 
         # create semantic encoding for each possible combination of stutter-schedulers
-        common.colourinfo("Start encoding non-quantified formula for all possible stutter-schedulers... (this might take some time)", False)
+        common.colourinfo(
+            "Start encoding non-quantified formula for all possible stutter-schedulers... (this might take some time)",
+            False)
         dict_of_encodings = dict()
         dict_of_rel_stutterscheds = dict()
         semanticEncoder = SemanticsEncoder(self.model, self.solver,
