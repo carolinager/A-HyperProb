@@ -8,7 +8,6 @@ import traceback
 
 def main():
     try:
-        print("hy")
         input_args = parseArguments()
         if input_args.checkProperty:
             hyperproperty = Property(input_args.hyperString)
