@@ -222,8 +222,9 @@ class ModelChecker:
             for action in state.actions:
                 self.dict_pair_index[(state.id, action.id)] = i
                 i += 1
+
         possible_stutterings = list(itertools.product(list(range(self.stutterLength)), repeat=i)) # list of all possible functions f : S x Act -> {0, ..., stutterLength - 1}, represented as tuples
-        combined_stutterscheds = list(itertools.product(possible_stutterings, repeat=self.no_of_stutter_quantifier))
+        # combined_stutterscheds = list(itertools.product(possible_stutterings, repeat=self.no_of_stutter_quantifier)) # this is
 
         # create semantic encoding for each possible combination of stutter-schedulers
         common.colourinfo(
@@ -239,10 +240,11 @@ class ModelChecker:
                                            self.stutterLength,
                                            self.stutter_state_mapping, self.dict_pair_index)
         # encoding for trivial stutter-scheduler and calculating relevant stutterscheds
-        _, rel_quant_stu, enc = semanticEncoder.encodeSemantics(changed_hyperproperty, combined_stutterscheds[0])
-        dict_of_encodings[combined_stutterscheds[0]] = enc
-        dict_of_rel_stutterscheds[combined_stutterscheds[0]] = semanticEncoder.genRelStutterscheds(
-            combined_stutterscheds[0], rel_quant_stu)
+        initial_stuttersched = list(itertools.product(possible_stutterings[:1], repeat=self.no_of_stutter_quantifier))[0]
+        _, rel_quant_stu, enc = semanticEncoder.encodeSemantics(changed_hyperproperty, initial_stuttersched)
+        dict_of_encodings[initial_stuttersched] = enc
+        dict_of_rel_stutterscheds[initial_stuttersched] = semanticEncoder.genRelStutterscheds(
+            initial_stuttersched, rel_quant_stu)
 
         combined_stutterscheds_rel = self.genComposedStutterscheds(possible_stutterings, rel_quant_stu)
 

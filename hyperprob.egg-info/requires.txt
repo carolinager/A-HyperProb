@@ -2,3 +2,4 @@ stormpy>=1.6.3
 lark-parser
 z3-solver
 termcolor
+cvc5
