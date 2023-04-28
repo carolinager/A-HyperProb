@@ -16,7 +16,8 @@ setup(
         'stormpy>=1.6.3',
         'lark-parser',
         'z3-solver',
-        'termcolor'
+        'termcolor',
+        'cvc5'
     ],
     python_requires='>=3.9',
 
