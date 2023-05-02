@@ -88,8 +88,12 @@ class ModelChecker:
                     for action in A:
                         name = "a_" + str(set(A)) + "_" + str(action)  # a_A_x is probability of action x at a state with enabled actions A
                         self.addToVariableList(name)
+                        # probabilistic scheduler
                         scheduler_restrictions.append(self.dictOfReals[name] >= RealVal(0))
                         scheduler_restrictions.append(self.dictOfReals[name] <= RealVal(1))
+                        # deterministic scheduler (inefficient to encode it like this?)
+                        # scheduler_restrictions.append(Or(self.dictOfReals[name] == RealVal(0),
+                        #                                  self.dictOfReals[name] == RealVal(1)))
                         sum_over_probs.append(self.dictOfReals[name])
                     scheduler_restrictions.append(Sum(sum_over_probs) == RealVal(1))
 
