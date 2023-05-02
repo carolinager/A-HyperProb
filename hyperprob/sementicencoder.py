@@ -46,8 +46,8 @@ class SemanticsEncoder:
 
     def encodeSemantics(self, hyperproperty, stutter_scheds, prev_relevant_quantifier=[]):
         # TODO check whether to remove prev_relevant_quantifier as its not used anmyore?
-        relevant_quantifier = []
-        relevant_quantifier_stu = []
+        relevant_quantifier = [] # contains index of stutter quantifiers that are relevant for this subformula wrt states
+        relevant_quantifier_stu = [] # contains index of stutter quantifiers that are relevant for this subformula wrt stutter-schedulers
         encoding = []
 
         if len(prev_relevant_quantifier) > 0:
@@ -668,7 +668,7 @@ class SemanticsEncoder:
             itertools.product(self.model.getListOfStates(), list(range(self.stutterLength))))
 
         stored_list = []
-        for quant in range(1, self.no_of_state_quantifier + 1):
+        for quant in range(1, self.no_of_stutter_quantifier + 1):
             if quant in list_of_relevant_quantifier:
                 stored_list.append(states_with_stuttering)
             else:
@@ -682,7 +682,7 @@ class SemanticsEncoder:
         :return: list of composed states.
         """
         stored_list = []
-        for quant in range(1, self.no_of_state_quantifier + 1):
+        for quant in range(1, self.no_of_stutter_quantifier + 1):
             if quant in list_of_relevant_quantifier:
                 stored_list.append(self.model.getListOfStates())
             else:
@@ -878,7 +878,7 @@ class SemanticsEncoder:
                     product = RealVal(1)
                     sched_prob = RealVal(1)
 
-                    for l in range(1, self.no_of_state_quantifier + 1):
+                    for l in range(1, self.no_of_stutter_quantifier + 1):
                         if l in relevant_quantifier:
                             l_index = relevant_quantifier.index(l)
                             succ_state = cs[l_index][0]
@@ -1062,7 +1062,7 @@ class SemanticsEncoder:
                         prob_succ = 'prob'
                         product = RealVal(1)
 
-                        for l in range(1, self.no_of_state_quantifier + 1):
+                        for l in range(1, self.no_of_stutter_quantifier + 1):
                             if l in relevant_quantifier:
                                 l_index = relevant_quantifier.index(l)
                                 succ_state = cs[l_index][0]
@@ -1151,7 +1151,7 @@ class SemanticsEncoder:
                         prob_succ = 'prob'
                         product = RealVal(1)
 
-                        for l in range(1, self.no_of_state_quantifier + 1):
+                        for l in range(1, self.no_of_stutter_quantifier + 1):
                             if l in relevant_quantifier:
                                 l_index = relevant_quantifier.index(l)
                                 succ_state = cs[l_index][0]
@@ -1343,7 +1343,7 @@ class SemanticsEncoder:
                     product = RealVal(1)
                     sched_prob = RealVal(1)
 
-                    for l in range(1, self.no_of_state_quantifier + 1):
+                    for l in range(1, self.no_of_stutter_quantifier + 1):
                         if l in relevant_quantifier:
                             l_index = relevant_quantifier.index(l)
                             succ_state = cs[l_index][0]

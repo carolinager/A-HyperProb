@@ -272,7 +272,7 @@ class ModelChecker:
         list_of_holds_and_enc = []
         for i in range(len(combined_list_of_states_with_initial_stutter)):
             name = "holds_"
-            for j in range(self.no_of_state_quantifier):
+            for j in range(self.no_of_stutter_quantifier):
                 name += str(combined_list_of_states_with_initial_stutter[i][j]) + "_"
             name += str(index_of_phi)
 
@@ -308,7 +308,7 @@ class ModelChecker:
         # TODO adjust if we choose to allow several stutter-quant for a state-quant
         state_encoding_i = []
         state_encoding_ipo = stutter_encoding_ipo
-        for quant in range(self.no_of_stutter_quantifier, 0, -1):
+        for quant in range(self.no_of_state_quantifier, 0, -1):
             n = len(self.model.getListOfStates())
             len_i = int(len(state_encoding_ipo) / n)
             if list_of_state_AV[quant - 1] == 'A':
