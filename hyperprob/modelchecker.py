@@ -251,7 +251,7 @@ class ModelChecker:
             initial_stuttersched, rel_quant_stu)
 
         common.colourinfo(
-            "Create all relevant cobminations of stutter-schedulers...",
+            "Create all relevant combinations of stutter-schedulers...",
             False)
         combined_stutterscheds_rel = self.genComposedStutterscheds(possible_stutterings, rel_quant_stu)
 
