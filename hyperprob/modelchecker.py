@@ -232,7 +232,7 @@ class ModelChecker:
 
         # create semantic encoding for each possible combination of stutter-schedulers
         common.colourinfo(
-            "Start encoding non-quantified formula for all possible stutter-schedulers... (this might take some time)",
+            "Create semantic encoding:",
             False)
         dict_of_encodings = dict()
         dict_of_rel_stutterscheds = dict()
@@ -250,9 +250,15 @@ class ModelChecker:
         dict_of_rel_stutterscheds[initial_stuttersched] = semanticEncoder.genRelStutterscheds(
             initial_stuttersched, rel_quant_stu)
 
+        common.colourinfo(
+            "Create all relevant cobminations of stutter-schedulers...",
+            False)
         combined_stutterscheds_rel = self.genComposedStutterscheds(possible_stutterings, rel_quant_stu)
 
         # encoding for relevant other stutter-schedulers
+        common.colourinfo(
+            "Start encoding non-quantified formula for all relevant combinations of stutter-schedulers...",
+            False)
         for stutter_scheds in combined_stutterscheds_rel[1:]:
             _, rel_quant_stu, enc = semanticEncoder.encodeSemantics(changed_hyperproperty, stutter_scheds)
             dict_of_encodings[stutter_scheds] = enc
