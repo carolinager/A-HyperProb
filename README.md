@@ -2,6 +2,8 @@
 
 This package model checks probabilistic hyperproperties written in HyperPCTL ON MDPS/DTMCs.
 
+Asynchronous, only existential stutter-scheduler quantification.
+
 ## Installation
 
 Begin by cloning this folder locally:
@@ -14,5 +16,3 @@ HyperProb depends on [stormpy](https://github.com/moves-rwth/stormpy) which has 
 
 To install HyperProb run:
 `pip install .` from the `HyperProb` folder.
-
-
