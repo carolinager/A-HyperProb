@@ -110,11 +110,13 @@ def checkStutterQuantifiers(hyperproperty, state_indices):
     while len(formula_duplicate.children) > 0 and type(formula_duplicate.children[0]) == Token:
         if formula_duplicate.data in ['exist_scheduler', 'forall_scheduler', 'exist_state', 'forall_state']:
             formula_duplicate = formula_duplicate.children[1]
-        elif formula_duplicate.data in ['forall_stutter', 'exist_stutter']:
+        elif formula_duplicate.data == 'exist_stutter':
             no_of_quantifier += 1
             quant_stutter_state_quantifier[int(formula_duplicate.children[0].value[1:])] = int(formula_duplicate.children[1].children[0].value[1:])
             variable_indices.append(int(formula_duplicate.children[0].value[1:]))
             formula_duplicate = formula_duplicate.children[2]
+        elif formula_duplicate.data == 'forall_stutter':
+            raise ValueError(f"Only existential stutter-quantification is supported")
     ## check that exactly one stutter-scheduler is quantified for each state
     # if len(state_indices) != len(variable_indices):
     #     raise ValueError("Number of quantified states and stutter-scheduler variables is not equal.")

@@ -35,19 +35,20 @@ class SemanticsEncoder:
         self.stutter_state_mapping = stutter_state_mapping
         self.dict_pair_index = dict_pair_index
 
-    def genRelStutterscheds(self, stutter_scheds, rel_quant_stu):
-        rel_stutter_scheds = []
-        for i in range(len(stutter_scheds)):
-            if i + 1 in rel_quant_stu:
-                rel_stutter_scheds.append(stutter_scheds[i])
-            else:
-                rel_stutter_scheds.append(tuple([0 for _ in stutter_scheds[i]]))
-        return tuple(rel_stutter_scheds)
+    # def genRelStutterscheds(self, stutter_scheds, rel_quant_stu):
+    #     rel_stutter_scheds = []
+    #     for i in range(len(stutter_scheds)):
+    #         if i + 1 in rel_quant_stu:
+    #             rel_stutter_scheds.append(stutter_scheds[i])
+    #         else:
+    #             rel_stutter_scheds.append(tuple([0 for _ in stutter_scheds[i]]))
+    #     return tuple(rel_stutter_scheds)
 
-    def encodeSemantics(self, hyperproperty, stutter_scheds, prev_relevant_quantifier=[]):
+    def encodeSemantics(self, hyperproperty, prev_relevant_quantifier=[]):
         # TODO check whether to remove prev_relevant_quantifier as its not used anmyore?
         relevant_quantifier = [] # contains index of stutter quantifiers that are relevant for this subformula wrt states
         relevant_quantifier_stu = [] # contains index of stutter quantifiers that are relevant for this subformula wrt stutter-schedulers
+        # todo remove relevant_quantifier_stu
         encoding = []
 
         if len(prev_relevant_quantifier) > 0:
@@ -57,10 +58,9 @@ class SemanticsEncoder:
             index_of_phi = self.list_of_subformula.index(hyperproperty)
             name = "holds"
             r_state = [(0, 0) for _ in range(self.no_of_stutter_quantifier)]
-            rel_stutter_scheds = tuple([tuple([0 for _ in x]) for x in stutter_scheds])
             for ind in r_state:
                 name += "_" + str(ind)
-            name += "_" + str(index_of_phi) + "_" + str(rel_stutter_scheds)
+            name += "_" + str(index_of_phi)
             self.addToVariableList(name)
             encoding.append(self.dictOfBools[name])
             self.no_of_subformula += 1
@@ -86,14 +86,12 @@ class SemanticsEncoder:
             combined_state_list = self.generateComposedStatesWithStutter(
                 relevant_quantifier)  # tuples without stutterlength
 
-            rel_stutter_scheds = tuple([tuple([0 for _ in x]) for x in stutter_scheds])
-
             for r_state in combined_state_list:
                 name = 'holds'
                 for tup in r_state:
                     name += "_" + str(tup)
-                name += "_" + str(index_of_phi) + "_" + str(rel_stutter_scheds)
-                self.addToVariableList(name)  # should look like: holds_(0, 0)_(0, 0)_2_((0,0,0,0,0,0),(0,0,0,0,0,0))
+                name += "_" + str(index_of_phi)
+                self.addToVariableList(name)  # should look like: holds_(0, 0)_(0, 0)_2
 
                 # check whether atomic proposition holds or not
                 if r_state[proposition_relevant_stutter - 1][0] in list_of_state_with_ap:
@@ -107,8 +105,8 @@ class SemanticsEncoder:
             return relevant_quantifier, relevant_quantifier_stu, encoding
 
         elif hyperproperty.data == 'and':
-            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0], stutter_scheds)
-            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1], stutter_scheds)
+            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0])
+            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1])
             relevant_quantifier = extendWithoutDuplicates(rel_quant1, rel_quant2)
             relevant_quantifier_stu = extendWithoutDuplicates(rel_quant_stu1, rel_quant_stu2)
             encoding = enc1 + enc2
@@ -121,8 +119,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += "_" + str(index_of_phi) + "_"
-                name1 += str(self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu))
+                name1 += "_" + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -130,7 +127,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += "_" + str(index_of_phi1) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu1))
+                name2 += "_" + str(index_of_phi1)
                 self.addToVariableList(name2)
                 name3 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -138,7 +135,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += "_" + str(index_of_phi2) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu2))
+                name3 += "_" + str(index_of_phi2)
                 self.addToVariableList(name3)
                 first_and = And(self.dictOfBools[name1],
                                 self.dictOfBools[name2],
@@ -153,10 +150,10 @@ class SemanticsEncoder:
             return relevant_quantifier, relevant_quantifier_stu, encoding
 
         elif hyperproperty.data == 'or':
-            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0], stutter_scheds)
-            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1], stutter_scheds)
+            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0])
+            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1])
             relevant_quantifier = extendWithoutDuplicates(rel_quant1, rel_quant2)
-            relevant_quantifier_stu = extendWithoutDuplicates(rel_quant_stu1, rel_quant_stu2)
+            # relevant_quantifier_stu = extendWithoutDuplicates(rel_quant_stu1, rel_quant_stu2)
             encoding = enc1 + enc2
 
             index_of_phi = self.list_of_subformula.index(hyperproperty)
@@ -168,7 +165,6 @@ class SemanticsEncoder:
                 for tup in r_state:
                     name1 += "_" + str(tup)
                 name1 += "_" + str(index_of_phi) + "_"
-                name1 += str(self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu))
                 self.addToVariableList(name1)
                 name2 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -176,7 +172,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += "_" + str(index_of_phi1) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu1))
+                name2 += "_" + str(index_of_phi1)
                 self.addToVariableList(name2)
                 name3 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -184,7 +180,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += "_" + str(index_of_phi2) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu2))
+                name3 += "_" + str(index_of_phi2)
                 self.addToVariableList(name3)
                 first_and = And(self.dictOfBools[name1],
                                 Or(self.dictOfBools[name2],
@@ -199,8 +195,8 @@ class SemanticsEncoder:
             return relevant_quantifier, relevant_quantifier_stu, encoding
 
         elif hyperproperty.data == 'implies':
-            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0], stutter_scheds)
-            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1], stutter_scheds)
+            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0])
+            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1])
             relevant_quantifier = extendWithoutDuplicates(rel_quant1, rel_quant2)
             relevant_quantifier_stu = extendWithoutDuplicates(rel_quant_stu1, rel_quant_stu2)
             encoding = enc1 + enc2
@@ -213,8 +209,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += "_" + str(index_of_phi) + "_"
-                name1 += str(self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu))
+                name1 += "_" + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -222,7 +217,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += "_" + str(index_of_phi1) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu1))
+                name2 += "_" + str(index_of_phi1)
                 self.addToVariableList(name2)
                 name3 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -230,7 +225,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += "_" + str(index_of_phi2) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu2))
+                name3 += "_" + str(index_of_phi2)
                 self.addToVariableList(name3)
                 first_and = And(self.dictOfBools[name1],
                                 Or(Not(self.dictOfBools[name2]),
@@ -245,8 +240,8 @@ class SemanticsEncoder:
             return relevant_quantifier, relevant_quantifier_stu, encoding
 
         elif hyperproperty.data == 'biconditional':
-            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0], stutter_scheds)
-            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1], stutter_scheds)
+            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0])
+            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1])
             relevant_quantifier = extendWithoutDuplicates(rel_quant1, rel_quant2)
             relevant_quantifier_stu = extendWithoutDuplicates(rel_quant_stu1, rel_quant_stu2)
             encoding = enc1 + enc2
@@ -259,8 +254,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += "_" + str(index_of_phi) + "_"
-                name1 += str(self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu))
+                name1 += "_" + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -268,7 +262,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += "_" + str(index_of_phi1) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu1))
+                name2 += "_" + str(index_of_phi1)
                 self.addToVariableList(name2)
                 name3 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -276,7 +270,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += "_" + str(index_of_phi2) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu2))
+                name3 += "_" + str(index_of_phi2)
                 self.addToVariableList(name3)
                 first_and = And(self.dictOfBools[name1],
                                 Or(
@@ -297,7 +291,7 @@ class SemanticsEncoder:
             return relevant_quantifier, relevant_quantifier_stu, encoding
 
         elif hyperproperty.data == 'not':
-            rel_quant, rel_quant_stu, encoding = self.encodeSemantics(hyperproperty.children[0], stutter_scheds)
+            rel_quant, rel_quant_stu, encoding = self.encodeSemantics(hyperproperty.children[0])
             relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
             # todo extending unnecessary here, relevant_quantifier is [] anyways
             relevant_quantifier_stu = rel_quant_stu
@@ -310,14 +304,12 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += "_" + str(index_of_phi) + "_"
-                name1 += str(self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu))
+                name1 += "_" + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'holds'
                 for ind in r_state:
                     name2 += "_" + str(ind)
-                name2 += "_" + str(index_of_phi1) + "_"
-                name2 += str(self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu))
+                name2 += "_" + str(index_of_phi1)
                 self.addToVariableList(name2)
                 encoding.append(Xor(self.dictOfBools[name1],
                                     self.dictOfBools[name2]))
@@ -328,38 +320,34 @@ class SemanticsEncoder:
             child = hyperproperty.children[0]
             if child.data == 'next':
                 rel_quant, relevant_quantifier_stu, encoding = self.encodeNextSemantics(hyperproperty,
-                                                                                        stutter_scheds,
                                                                                         relevant_quantifier)
                 relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
 
             elif child.data == 'until_unbounded':
                 rel_quant, relevant_quantifier_stu, encoding = self.encodeUnboundedUntilSemantics(hyperproperty,
-                                                                                                  stutter_scheds,
                                                                                                   relevant_quantifier)
                 relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
 
-            elif child.data == 'until_bounded':
-                rel_quant, _, _, relevant_quantifier_stu, _, _, encoding = self.encodeBoundedUntilSemantics(
-                    hyperproperty, stutter_scheds, relevant_quantifier)
-                relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
+            #"""elif child.data == 'until_bounded':
+            #    rel_quant, _, _, relevant_quantifier_stu, _, _, encoding = self.encodeBoundedUntilSemantics(
+            #        hyperproperty, relevant_quantifier)
+            #    relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)"""
 
             elif child.data == 'future':
                 rel_quant, relevant_quantifier_stu, encoding = self.encodeFutureSemantics(hyperproperty,
-                                                                                          stutter_scheds,
                                                                                           relevant_quantifier)
                 relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
 
             elif child.data == 'global':
                 rel_quant, relevant_quantifier_stu, encoding = self.encodeGlobalSemantics(hyperproperty,
-                                                                                          stutter_scheds,
                                                                                           relevant_quantifier)
                 relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
 
             return relevant_quantifier, relevant_quantifier_stu, encoding
 
         elif hyperproperty.data == 'less_probability':
-            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0], stutter_scheds)
-            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1], stutter_scheds)
+            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0])
+            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1])
             relevant_quantifier = extendWithoutDuplicates(rel_quant1, rel_quant2)
             relevant_quantifier_stu = extendWithoutDuplicates(rel_quant_stu1, rel_quant_stu2)
             encoding = enc1 + enc2
@@ -372,8 +360,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += "_" + str(index_of_phi) + "_"
-                name1 += str(self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu))
+                name1 += "_" + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -381,7 +368,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += "_" + str(index_of_phi1) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu1))
+                name2 += "_" + str(index_of_phi1)
                 self.addToVariableList(name2)
                 name3 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -389,7 +376,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += "_" + str(index_of_phi2) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu2))
+                name3 += "_" + str(index_of_phi2)
                 self.addToVariableList(name3)
                 and_eq = And(self.dictOfBools[name1],
                              self.dictOfReals[name2] < self.dictOfReals[name3])
@@ -402,8 +389,8 @@ class SemanticsEncoder:
             return relevant_quantifier, relevant_quantifier_stu, encoding
 
         elif hyperproperty.data == 'equal_probability':
-            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0], stutter_scheds)
-            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1], stutter_scheds)
+            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0])
+            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1])
             relevant_quantifier = extendWithoutDuplicates(rel_quant1, rel_quant2)
             relevant_quantifier_stu = extendWithoutDuplicates(rel_quant_stu1, rel_quant_stu2)
             encoding = enc1 + enc2
@@ -416,8 +403,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += "_" + str(index_of_phi) + "_"
-                name1 += str(self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu))
+                name1 += "_" + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -425,7 +411,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += "_" + str(index_of_phi1) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu1))
+                name2 += "_" + str(index_of_phi1)
                 self.addToVariableList(name2)
                 name3 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -433,7 +419,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += "_" + str(index_of_phi2) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu2))
+                name3 += "_" + str(index_of_phi2)
                 self.addToVariableList(name3)
                 and_eq = And(self.dictOfBools[name1],
                              self.dictOfReals[name2] == self.dictOfReals[name3])
@@ -446,8 +432,8 @@ class SemanticsEncoder:
             return relevant_quantifier, relevant_quantifier_stu, encoding
 
         elif hyperproperty.data == 'greater_probability':
-            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0], stutter_scheds)
-            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1], stutter_scheds)
+            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0])
+            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1])
             relevant_quantifier = extendWithoutDuplicates(rel_quant1, rel_quant2)
             relevant_quantifier_stu = extendWithoutDuplicates(rel_quant_stu1, rel_quant_stu2)
             encoding = enc1 + enc2
@@ -460,8 +446,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += "_" + str(index_of_phi) + "_"
-                name1 += str(self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu))
+                name1 += "_" + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -469,7 +454,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += "_" + str(index_of_phi1) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu1))
+                name2 += "_" + str(index_of_phi1)
                 self.addToVariableList(name2)
                 name3 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -477,7 +462,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += "_" + str(index_of_phi2) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu2))
+                name3 += "_" + str(index_of_phi2)
                 self.addToVariableList(name3)
                 and_eq = And(self.dictOfBools[name1],
                              self.dictOfReals[name2] > self.dictOfReals[name3])
@@ -490,8 +475,8 @@ class SemanticsEncoder:
             return relevant_quantifier, relevant_quantifier_stu, encoding
 
         elif hyperproperty.data == 'greater_and_equal_probability':
-            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0], stutter_scheds)
-            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1], stutter_scheds)
+            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0])
+            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1])
             relevant_quantifier = extendWithoutDuplicates(rel_quant1, rel_quant2)
             relevant_quantifier_stu = extendWithoutDuplicates(rel_quant_stu1, rel_quant_stu2)
             encoding = enc1 + enc2
@@ -504,8 +489,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += "_" + str(index_of_phi) + "_"
-                name1 += str(self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu))
+                name1 += "_" + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -513,7 +497,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += "_" + str(index_of_phi1) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu1))
+                name2 += "_" + str(index_of_phi1)
                 self.addToVariableList(name2)
                 name3 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -521,7 +505,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += "_" + str(index_of_phi2) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu2))
+                name3 += "_" + str(index_of_phi2)
                 self.addToVariableList(name3)
                 and_eq = And(self.dictOfBools[name1],
                              self.dictOfReals[name2] >= self.dictOfReals[name3])
@@ -534,8 +518,8 @@ class SemanticsEncoder:
             return relevant_quantifier, relevant_quantifier_stu, encoding
 
         elif hyperproperty.data == 'less_and_equal_probability':
-            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0], stutter_scheds)
-            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1], stutter_scheds)
+            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0])
+            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1])
             relevant_quantifier = extendWithoutDuplicates(rel_quant1, rel_quant2)
             relevant_quantifier_stu = extendWithoutDuplicates(rel_quant_stu1, rel_quant_stu2)
             encoding = enc1 + enc2
@@ -548,8 +532,7 @@ class SemanticsEncoder:
                 name1 = 'holds'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += "_" + str(index_of_phi) + "_"
-                name1 += str(self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu))
+                name1 += "_" + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -557,7 +540,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += "_" + str(index_of_phi1) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu1))
+                name2 += "_" + str(index_of_phi1)
                 self.addToVariableList(name2)
                 name3 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -565,7 +548,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += "_" + str(index_of_phi2) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu2))
+                name3 += "_" + str(index_of_phi2)
                 self.addToVariableList(name3)
                 and_eq = And(self.dictOfBools[name1],
                              self.dictOfReals[name2] <= self.dictOfReals[name3])
@@ -584,18 +567,17 @@ class SemanticsEncoder:
             index_of_phi = self.list_of_subformula.index(hyperproperty)
             name = "prob"
             r_state = [(0, 0) for _ in range(self.no_of_stutter_quantifier)]
-            rel_stutter_scheds = tuple([tuple([0 for _ in x]) for x in stutter_scheds])
             for tup in r_state:
                 name += "_" + str(tup)
-            name += "_" + str(index_of_phi) + "_" + str(rel_stutter_scheds)
+            name += "_" + str(index_of_phi)
             self.addToVariableList(name)
             encoding.append(self.dictOfReals[name] == constant)
             self.no_of_subformula += 1
             return relevant_quantifier, relevant_quantifier_stu, encoding
 
         elif hyperproperty.data in ['add_probability', 'subtract_probability', 'multiply_probability']:
-            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0], stutter_scheds)
-            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1], stutter_scheds)
+            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(hyperproperty.children[0])
+            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(hyperproperty.children[1])
             relevant_quantifier = extendWithoutDuplicates(rel_quant1, rel_quant2)
             relevant_quantifier_stu = extendWithoutDuplicates(rel_quant_stu1, rel_quant_stu2)
             encoding = enc1 + enc2
@@ -608,8 +590,7 @@ class SemanticsEncoder:
                 name1 = 'prob'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += "_" + str(index_of_phi) + "_"
-                name1 += str(self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu))
+                name1 += "_" + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -617,7 +598,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += "_" + str(index_left) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu1))
+                name2 += "_" + str(index_left)
                 self.addToVariableList(name2)
                 name3 = 'prob'
                 for ind in range(0, len(r_state)):
@@ -625,7 +606,7 @@ class SemanticsEncoder:
                         name3 += "_" + str(r_state[ind])
                     else:
                         name3 += "_" + str((0, 0))
-                name3 += "_" + str(index_right) + "_" + str(self.genRelStutterscheds(stutter_scheds, rel_quant_stu2))
+                name3 += "_" + str(index_right)
                 self.addToVariableList(name3)
                 if hyperproperty.data == 'add_probability':
                     encoding.append(self.dictOfReals[name1] == (
@@ -645,8 +626,7 @@ class SemanticsEncoder:
             return relevant_quantifier, relevant_quantifier_stu, encoding
 
         else:  # todo when is this case used, should never occur?
-            rel_quant, relevant_quantifier_stu, encoding = self.encodeSemantics(hyperproperty.children[0],
-                                                                                stutter_scheds)
+            rel_quant, relevant_quantifier_stu, encoding = self.encodeSemantics(hyperproperty.children[0])
             return rel_quant, relevant_quantifier_stu, encoding
 
     def addToVariableList(self, name):
@@ -716,12 +696,11 @@ class SemanticsEncoder:
             dicts.append(list_of_all_succ)
         return list(itertools.product(*dicts))
 
-    def encodeNextSemantics(self, hyperproperty, stutter_scheds, prev_relevant_quantifier=[]):
+    def encodeNextSemantics(self, hyperproperty, prev_relevant_quantifier=[]):
         phi1 = hyperproperty.children[0].children[0]
         index_of_phi1 = self.list_of_subformula.index(phi1)
         index_of_phi = self.list_of_subformula.index(hyperproperty)
         relevant_quantifier, rel_quant_stu1, encoding = self.encodeSemantics(phi1,
-                                                                             stutter_scheds,
                                                                              prev_relevant_quantifier)
 
         combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
@@ -730,8 +709,6 @@ class SemanticsEncoder:
 
         # relevant quantifiers for temporal operators are all the quantifiers occuring in the subformulas
         relevant_quantifier_stu = copy.deepcopy(relevant_quantifier)
-        stutter_scheds1 = self.genRelStutterscheds(stutter_scheds, rel_quant_stu1)
-        stutter_scheds0 = self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu)
 
         for r_state in combined_state_list:
             # encode relationship between holds and holdsToInt
@@ -739,11 +716,11 @@ class SemanticsEncoder:
             str_r_state = ""
             for tup in r_state:
                 str_r_state += "_" + str(tup)
-            holds1 += str_r_state + "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
+            holds1 += str_r_state + "_" + str(index_of_phi1)
             self.addToVariableList(holds1)
-            holdsToInt1 = 'holdsToInt' + str_r_state + "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
+            holdsToInt1 = 'holdsToInt' + str_r_state + "_" + str(index_of_phi1)
             self.addToVariableList(holdsToInt1)
-            prob_phi = 'prob' + str_r_state + "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
+            prob_phi = 'prob' + str_r_state + "_" + str(index_of_phi)
             self.addToVariableList(prob_phi)
             first_and = Or(
                 And(self.dictOfReals[holdsToInt1] == RealVal(1),
@@ -766,7 +743,7 @@ class SemanticsEncoder:
                 # list entries are tuples (l_1, ... l_n) where l_i = (s, p) where
                 # s is a successor of the ith relevant state (i.e. r_state[relevant_quantifier[i]][0] )
                 # p is the transition probability (1 if the transition is a stutter step)
-                combined_succ = self.genSuccessors(r_state, ca, stutter_scheds0, relevant_quantifier)
+                combined_succ = self.genSuccessors(r_state, ca, relevant_quantifier)
 
                 # calculate probability based on probabilities that phi1 holds in the successor states
                 for cs in combined_succ:
@@ -783,7 +760,7 @@ class SemanticsEncoder:
                         else:
                             holdsToInt_succ += "_" + str((0, 0))
 
-                    holdsToInt_succ += "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
+                    holdsToInt_succ += "_" + str(index_of_phi1)
                     self.addToVariableList(holdsToInt_succ)
                     product *= self.dictOfReals[holdsToInt_succ]
 
@@ -796,24 +773,20 @@ class SemanticsEncoder:
 
         return relevant_quantifier, relevant_quantifier_stu, encoding
 
-    def encodeUnboundedUntilSemantics(self, hyperproperty, stutter_scheds, relevant_quantifier=[]):
+    def encodeUnboundedUntilSemantics(self, hyperproperty, relevant_quantifier=[]):
         index_of_phi = self.list_of_subformula.index(hyperproperty)
         phi1 = hyperproperty.children[0].children[0]
         index_of_phi1 = self.list_of_subformula.index(phi1)
-        rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(phi1, stutter_scheds)
+        rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(phi1)
         relevant_quantifier = extendWithoutDuplicates(rel_quant1, relevant_quantifier)
         phi2 = hyperproperty.children[0].children[1]
         index_of_phi2 = self.list_of_subformula.index(phi2)
-        rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(phi2, stutter_scheds)
+        rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(phi2)
 
         relevant_quantifier = extendWithoutDuplicates(rel_quant2, relevant_quantifier)
         combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
 
         relevant_quantifier_stu = copy.deepcopy(relevant_quantifier)
-        stutter_scheds0 = self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu)
-        stutter_scheds1 = self.genRelStutterscheds(stutter_scheds, rel_quant_stu1)
-        stutter_scheds2 = self.genRelStutterscheds(stutter_scheds, rel_quant_stu2)
-
         encoding = enc1 + enc2
 
         for r_state in combined_state_list:
@@ -824,7 +797,7 @@ class SemanticsEncoder:
                     holds1 += "_" + str(r_state[ind])
                 else:
                     holds1 += "_" + str((0, 0))
-            holds1 += "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
+            holds1 += "_" + str(index_of_phi1)
             self.addToVariableList(holds1)
             holds2 = 'holds'
             for ind in range(0, len(r_state)):
@@ -832,12 +805,12 @@ class SemanticsEncoder:
                     holds2 += "_" + str(r_state[ind])
                 else:
                     holds2 += "_" + str((0, 0))
-            holds2 += "_" + str(index_of_phi2) + "_" + str(stutter_scheds2)
+            holds2 += "_" + str(index_of_phi2)
             self.addToVariableList(holds2)
             prob_phi = 'prob'
             for tup in r_state:
                 prob_phi += "_" + str(tup)
-            prob_phi += "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
+            prob_phi += "_" + str(index_of_phi)
             self.addToVariableList(prob_phi)
 
             #new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
@@ -867,7 +840,7 @@ class SemanticsEncoder:
             loop_condition_list = []
             for ca in combined_acts:
                 # create list of successors of r_state with probabilities under currently considered stuttering and actions
-                combined_succ = self.genSuccessors(r_state, ca, stutter_scheds0, relevant_quantifier)
+                combined_succ = self.genSuccessors(r_state, ca, relevant_quantifier)
 
                 # create equation system for probabilities and a loop condition to ensure correctness
                 for cs in combined_succ:
@@ -894,18 +867,18 @@ class SemanticsEncoder:
                             d_succ += "_" + str((0, 0))
                         d_current += "_" + str(r_state[l - 1])
 
-                    prob_succ += "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
+                    prob_succ += "_" + str(index_of_phi)
                     self.addToVariableList(prob_succ)
                     product *= self.dictOfReals[prob_succ]
                     sum_of_probs += product
                     self.no_of_subformula += 1
 
                     # loop condition
-                    holds_succ += "_" + str(index_of_phi2) + "_" + str(stutter_scheds2)
+                    holds_succ += "_" + str(index_of_phi2)
                     self.addToVariableList(holds_succ)
-                    d_current += "_" + str(index_of_phi2) + "_" + str(stutter_scheds2)
+                    d_current += "_" + str(index_of_phi2)
                     self.addToVariableList(d_current)
-                    d_succ += "_" + str(index_of_phi2) + "_" + str(stutter_scheds2)
+                    d_succ += "_" + str(index_of_phi2)
                     self.addToVariableList(d_succ)
                     loop_condition_list.append(And(sched_prob > RealVal(0),
                                                    Or(self.dictOfBools[holds_succ],
@@ -929,7 +902,7 @@ class SemanticsEncoder:
 
         return relevant_quantifier, relevant_quantifier_stu, encoding
 
-    def encodeBoundedUntilSemantics(self, hyperproperty, stutter_scheds, relevant_quantifier=[]):
+    """def encodeBoundedUntilSemantics(self, hyperproperty, relevant_quantifier=[]):
         k1 = int(hyperproperty.children[0].children[1].value)
         k2 = int(hyperproperty.children[0].children[2].value)
 
@@ -943,24 +916,21 @@ class SemanticsEncoder:
 
         # case distinction on the values of k1, k2
         if k2 == 0:
-            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(phi1, stutter_scheds)
+            rel_quant1, rel_quant_stu1, enc1 = self.encodeSemantics(phi1)
             relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant1)
-            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(phi2, stutter_scheds)
+            rel_quant2, rel_quant_stu2, enc2 = self.encodeSemantics(phi2)
 
             relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant2)
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
 
             relevant_quantifier_stu = copy.deepcopy(relevant_quantifier)
-            stutter_scheds0 = self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu)
-            stutter_scheds2 = self.genRelStutterscheds(stutter_scheds, rel_quant_stu2)
-
             encoding = enc1 + enc2
 
             for r_state in combined_state_list:
                 name1 = 'prob'
                 for tup in r_state:
                     name1 += "_" + str(tup)
-                name1 += "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
+                name1 += "_" + str(index_of_phi)
                 self.addToVariableList(name1)
                 name2 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -968,7 +938,7 @@ class SemanticsEncoder:
                         name2 += "_" + str(r_state[ind])
                     else:
                         name2 += "_" + str((0, 0))
-                name2 += "_" + str(index_of_phi2) + "_" + str(stutter_scheds2)
+                name2 += "_" + str(index_of_phi2)
                 self.addToVariableList(name2)
 
                 eq1 = Implies(self.dictOfBools[name2],
@@ -991,7 +961,7 @@ class SemanticsEncoder:
             index_of_replaced = self.list_of_subformula.index(hyperproperty_new)
             rel_quant, rel_quant1, rel_quant2, \
                 rel_quant_stu, rel_quant_stu1, rel_quant_stu2, \
-                encoding = self.encodeBoundedUntilSemantics(hyperproperty_new, stutter_scheds)
+                encoding = self.encodeBoundedUntilSemantics(hyperproperty_new)
 
             relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
             # TODO isnt it unnecessary to add them again since we already added the quantifiers in the base case.
@@ -1000,9 +970,6 @@ class SemanticsEncoder:
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
 
             relevant_quantifier_stu = copy.deepcopy(relevant_quantifier) # = rel_quant_stu due to base case
-            stutter_scheds0 = self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu)
-            stutter_scheds1 = self.genRelStutterscheds(stutter_scheds, rel_quant_stu1)
-            stutter_scheds2 = self.genRelStutterscheds(stutter_scheds, rel_quant_stu2)
 
             for r_state in combined_state_list:
                 # encode cases where we know probability is 0 or 1 and require probs variables to be in [0,1]
@@ -1012,7 +979,7 @@ class SemanticsEncoder:
                         holds1 += "_" + str(r_state[ind])
                     else:
                         holds1 += "_" + str((0, 0))
-                holds1 += "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
+                holds1 += "_" + str(index_of_phi1)
                 self.addToVariableList(holds1)
                 holds2 = 'holds'
                 for ind in range(0, len(r_state)):
@@ -1020,12 +987,12 @@ class SemanticsEncoder:
                         holds2 += "_" + str(r_state[ind])
                     else:
                         holds2 += "_" + str((0, 0))
-                holds2 += "_" + str(index_of_phi2) + "_" + str(stutter_scheds2)
+                holds2 += "_" + str(index_of_phi2)
                 self.addToVariableList(holds2)
                 prob_phi = 'prob'
                 for tup in r_state:
                     prob_phi += "_" + str(tup)
-                prob_phi += "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
+                prob_phi += "_" + str(index_of_phi)
                 self.addToVariableList(prob_phi)
 
                 # new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
@@ -1055,7 +1022,7 @@ class SemanticsEncoder:
                 sum_of_probs = RealVal(0)
                 for ca in combined_acts:
                     # create list of successors of r_state with probabilities under currently considered stuttering and actions
-                    combined_succ = self.genSuccessors(r_state, ca, stutter_scheds0, relevant_quantifier)
+                    combined_succ = self.genSuccessors(r_state, ca, relevant_quantifier)
 
                     # calculate probability based on probabilities that successor states satisfy the property with bounds decreased by 1
                     for cs in combined_succ:
@@ -1072,7 +1039,7 @@ class SemanticsEncoder:
                             else:
                                 prob_succ += "_" + str((0, 0))
 
-                        prob_succ += "_" + str(index_of_replaced) + "_" + str(stutter_scheds0)
+                        prob_succ += "_" + str(index_of_replaced)
                         self.addToVariableList(prob_succ)
                         product *= self.dictOfReals[prob_succ]
 
@@ -1096,14 +1063,12 @@ class SemanticsEncoder:
             index_of_replaced = self.list_of_subformula.index(hyperproperty_new)
             rel_quant, rel_quant1, rel_quant2, \
                 rel_quant_stu, rel_quant_stu1, rel_quant_stu2, \
-                encoding = self.encodeBoundedUntilSemantics(hyperproperty_new, stutter_scheds) #todo nicer formatting, maybe save as a tuple and unpack later
+                encoding = self.encodeBoundedUntilSemantics(hyperproperty_new) #todo nicer formatting, maybe save as a tuple and unpack later
 
             relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant)
             combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
 
             relevant_quantifier_stu = copy.deepcopy(relevant_quantifier) # = rel_quant due to base case
-            stutter_scheds0 = self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu)
-            stutter_scheds1 = self.genRelStutterscheds(stutter_scheds, rel_quant_stu1)
 
             for r_state in combined_state_list:
                 # encode cases where we know probability is 0 and require probs variables to be in [0,1]
@@ -1113,12 +1078,12 @@ class SemanticsEncoder:
                         holds1 += "_" + str(r_state[ind])
                     else:
                         holds1 += "_" + str((0, 0))
-                holds1 += "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
+                holds1 += "_" + str(index_of_phi1)
                 self.addToVariableList(holds1)
                 prob_phi = 'prob'
                 for tup in r_state:
                     prob_phi += "_" + str(tup)
-                prob_phi += "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
+                prob_phi += "_" + str(index_of_phi)
                 self.addToVariableList(prob_phi)
 
                 # new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
@@ -1144,7 +1109,7 @@ class SemanticsEncoder:
                 sum_of_probs = RealVal(0)
                 for ca in combined_acts:
                     # create list of successors of r_state with probabilities under currently considered stuttering and actions
-                    combined_succ = self.genSuccessors(r_state, ca, stutter_scheds0, relevant_quantifier)
+                    combined_succ = self.genSuccessors(r_state, ca, relevant_quantifier)
 
                     # create equation system for probabilities
                     for cs in combined_succ:
@@ -1162,7 +1127,7 @@ class SemanticsEncoder:
                             else:
                                 prob_succ += "_" + str((0, 0))
 
-                        prob_succ += "_" + str(index_of_replaced) + "_" + str(stutter_scheds0)
+                        prob_succ += "_" + str(index_of_replaced)
                         self.addToVariableList(prob_succ)
                         product *= self.dictOfReals[prob_succ]
                         sum_of_probs += product
@@ -1174,19 +1139,18 @@ class SemanticsEncoder:
                 self.no_of_subformula += 1
 
         return relevant_quantifier, rel_quant1, rel_quant2, relevant_quantifier_stu, rel_quant_stu1, rel_quant_stu2, encoding
+    """
 
-    def encodeFutureSemantics(self, hyperproperty, stutter_scheds, prev_relevant_quantifier=[]):
+    def encodeFutureSemantics(self, hyperproperty, prev_relevant_quantifier=[]):
         phi1 = hyperproperty.children[0].children[0]
         index_of_phi1 = self.list_of_subformula.index(phi1)
         index_of_phi = self.list_of_subformula.index(hyperproperty)
-        relevant_quantifier, rel_quant_stu1, encoding = self.encodeSemantics(phi1, stutter_scheds, prev_relevant_quantifier)
+        relevant_quantifier, rel_quant_stu1, encoding = self.encodeSemantics(phi1, prev_relevant_quantifier)
 
         # relevant_quantifier = extendWithoutDuplicates(relevant_quantifier, rel_quant1)
         combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
 
         relevant_quantifier_stu = copy.deepcopy(relevant_quantifier)
-        stutter_scheds1 = self.genRelStutterscheds(stutter_scheds, rel_quant_stu1)
-        stutter_scheds0 = self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu)
 
         for r_state in combined_state_list:
             # encode cases where we know probability is 1 and require probs variables to be in [0,1]
@@ -1194,9 +1158,9 @@ class SemanticsEncoder:
             str_r_state = ""
             for ind in r_state:
                 str_r_state += "_" + str(ind)
-            holds1 += str_r_state + "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
+            holds1 += str_r_state + "_" + str(index_of_phi1)
             self.addToVariableList(holds1)
-            prob_phi = 'prob' + str_r_state + "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
+            prob_phi = 'prob' + str_r_state + "_" + str(index_of_phi)
             self.addToVariableList(prob_phi)
 
             #new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
@@ -1223,7 +1187,7 @@ class SemanticsEncoder:
 
             for ca in combined_acts:
                 # create list of successors of r_state with probabilities under currently considered stuttering and actions
-                combined_succ = self.genSuccessors(r_state, ca, stutter_scheds0, relevant_quantifier)
+                combined_succ = self.genSuccessors(r_state, ca, relevant_quantifier)
 
                 # create equation system for probabilities and a loop condition to ensure correctness
                 for cs in combined_succ:
@@ -1250,18 +1214,18 @@ class SemanticsEncoder:
                             d_succ += "_" + str((0, 0))
                         d_current += "_" + str(r_state[l - 1])
 
-                    prob_succ += "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
+                    prob_succ += "_" + str(index_of_phi)
                     self.addToVariableList(prob_succ)
                     product *= self.dictOfReals[prob_succ]
                     sum_of_probs += product
                     self.no_of_subformula += 1
 
                     # loop condition
-                    holds_succ += "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
+                    holds_succ += "_" + str(index_of_phi1)
                     self.addToVariableList(holds_succ)
-                    d_current += "_" + str(index_of_phi1) + "_" + str(stutter_scheds1) # todo stutter_scheds1 or 0 ??
+                    d_current += "_" + str(index_of_phi1)
                     self.addToVariableList(d_current)
-                    d_succ += "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
+                    d_succ += "_" + str(index_of_phi1)
                     self.addToVariableList(d_succ)
                     loop_condition_list.append(And(sched_prob > RealVal(0),
                                                    Or(self.dictOfBools[holds_succ],
@@ -1284,18 +1248,16 @@ class SemanticsEncoder:
             self.no_of_subformula += 1
         return relevant_quantifier, relevant_quantifier_stu, encoding
 
-    def encodeGlobalSemantics(self, hyperproperty, stutter_scheds, relevant_quantifier=[]):
+    def encodeGlobalSemantics(self, hyperproperty, relevant_quantifier=[]):
         index_of_phi = self.list_of_subformula.index(hyperproperty)
         phi1 = hyperproperty.children[0].children[0]
         index_of_phi1 = self.list_of_subformula.index(phi1)
-        rel_quant1, rel_quant_stu1, encoding = self.encodeSemantics(phi1, stutter_scheds)
+        rel_quant1, rel_quant_stu1, encoding = self.encodeSemantics(phi1)
 
         relevant_quantifier = extendWithoutDuplicates(rel_quant1, relevant_quantifier)
         combined_state_list = self.generateComposedStatesWithStutter(relevant_quantifier)
 
         relevant_quantifier_stu = copy.deepcopy(relevant_quantifier)
-        stutter_scheds0 = self.genRelStutterscheds(stutter_scheds, relevant_quantifier_stu)
-        stutter_scheds1 = self.genRelStutterscheds(stutter_scheds, rel_quant_stu1)
 
         for r_state in combined_state_list:
             # encode cases where we know probability is 0 and require probs variables to be in [0,1]
@@ -1303,10 +1265,10 @@ class SemanticsEncoder:
             str_r_state = ""
             for tup in r_state:
                 str_r_state += "_" + str(tup)
-            holds1 += str_r_state + "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
+            holds1 += str_r_state + "_" + str(index_of_phi1)
             self.addToVariableList(holds1)
             prob_phi = 'prob'
-            prob_phi += str_r_state + "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
+            prob_phi += str_r_state + "_" + str(index_of_phi)
             self.addToVariableList(prob_phi)
 
             # new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
@@ -1359,18 +1321,18 @@ class SemanticsEncoder:
                             d_succ += "_" + str((0, 0))
                         d_current += "_" + str(r_state[l - 1])
 
-                    prob_succ += "_" + str(index_of_phi) + "_" + str(stutter_scheds0)
+                    prob_succ += "_" + str(index_of_phi)
                     self.addToVariableList(prob_succ)
                     product *= self.dictOfReals[prob_succ]
                     sum_of_probs += product
                     self.no_of_subformula += 1
 
                     # loop condition
-                    holds_succ += "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
+                    holds_succ += "_" + str(index_of_phi1)
                     self.addToVariableList(holds_succ)
-                    d_current += "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
+                    d_current += "_" + str(index_of_phi1)
                     self.addToVariableList(d_current)
-                    d_succ += "_" + str(index_of_phi1) + "_" + str(stutter_scheds1)
+                    d_succ += "_" + str(index_of_phi1)
                     self.addToVariableList(d_succ)
                     loop_condition_list.append(And(sched_prob > RealVal(0),
                                                    Or(Not(self.dictOfBools[holds_succ]),
