@@ -578,7 +578,7 @@ class SemanticsEncoder:
             itertools.product(self.model.getListOfStates(), list(range(self.stutterLength))))
 
         stored_list = []
-        for quant in range(1, self.no_of_state_quantifier + 1):
+        for quant in range(1, self.no_of_stutter_quantifier + 1):
             if quant in list_of_relevant_quantifier:
                 stored_list.append(states_with_stuttering)
             else:

@@ -200,13 +200,11 @@ def checkStutterQuantifiers(hyperproperty, state_indices):
             quant_stutter_state_quantifier[int(formula_duplicate.children[0].value[1:])] = int(formula_duplicate.children[1].children[0].value[1:])
             variable_indices.append(int(formula_duplicate.children[0].value[1:]))
             formula_duplicate = formula_duplicate.children[2]
-    # check that exactly one stutter-scheduler is quantified for each state
-    if len(state_indices) != len(variable_indices):
-        raise ValueError("Number of quantified states and stutter-scheduler variables is not equal.")
     associated_state_indices = quant_stutter_state_quantifier.values()
     for i in state_indices:
         if i not in associated_state_indices:
             raise ValueError(f"State s{i} is not associated with a stutter-scheduler")
+    # todo check that all states associated with some stutter-quantifier are also quantified
     # extra TODO: add handling for missing stutter quantifiers (for all state, no stuttering)
     # check all quantified stutter-sched variables are named correctly and occur in the correct order
     if list(range(1, len(variable_indices)+1)) != variable_indices:
