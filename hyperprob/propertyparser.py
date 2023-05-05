@@ -83,98 +83,12 @@ class Property:
     def printProperty(self):
         print(self.parsed_property.pretty())
 
-
-'''
-def findToken(formula, token):
-    no_of_children = len(formula.children)
-    result_for_child1 = False
-    result_for_child2 = False
-    if no_of_children == 0:
-        return False
-
-    if formula.children[0] == token:
-        result_for_child1 = True
-    elif formula.children[0] != token and type(formula.children[0]) != Token:
-        result_for_child1 = findToken(formula.children[0], token)
-
-    if no_of_children > 1 and not result_for_child1:
-        if formula.children[1] == token:
-            result_for_child2 = True
-        elif formula.children[1] != token and type(formula.children[1]) != Token:
-            result_for_child2 = findToken(formula.children[1], token)
-
-    return result_for_child1 or result_for_child2
-
-
-def renameQuantifierVariable(formula_inp, old, new):
-    no_of_children = len(formula_inp.children)
-    if no_of_children == 0:
-        return formula_inp
-
-    if formula_inp.children[0] == old:
-        formula_inp.children[0] = new
-    elif formula_inp.children[0] != old and type(formula_inp.children[0]) != Token:
-        formula_inp.children[0] = renameQuantifierVariable(formula_inp.children[0], old, new)
-
-    if no_of_children > 1:
-        if formula_inp.children[1] == old:
-            formula_inp.children[1] = new
-        elif formula_inp.children[1] != old and type(formula_inp.children[1]) != Token:
-            formula_inp.children[1] = renameQuantifierVariable(formula_inp.children[1], old, new)
-
-    return formula_inp
-
-
-def editFormula(formula_inp):
-    formula_inp_copy = None
-    formula_inp_duplicate = formula_inp
-    previous_head = None
-    nos_of_quantifier = 0
-    quantifier_change = []  # false indicates the quantifier was deleted, true indicates it'll stay but might need name change
-    while len(formula_inp_duplicate.children) > 0 and type(formula_inp_duplicate.children[0]) == Token:
-        if formula_inp_duplicate.data in ['exist_scheduler', 'forall_scheduler']:
-            formula_inp_duplicate = formula_inp_duplicate.children[1]
-        elif formula_inp_duplicate.data in ['exist_state', 'forall_state']:
-            tok = formula_inp_duplicate.children[0]
-            res = findToken(formula_inp_duplicate.children[1], tok)
-            if not res:
-                if previous_head is None:
-                    formula_inp_copy = formula_inp_duplicate.children[1]
-                else:
-                    previous_head.children[1] = formula_inp_duplicate.children[1]
-                    formula_inp_copy = previous_head
-            else:
-                nos_of_quantifier += 1
-                previous_head = formula_inp_copy
-            quantifier_change.append(not res)
-            formula_inp_duplicate = formula_inp_duplicate.children[1]
-
-    quantifier_index = 1
-    for quant in range(len(quantifier_change)):
-        if quantifier_change[quant] and quantifier_index < (quant + 1):
-            old = Token('NAME', 's' + str(quant + 1))
-            new = Token('NAME', 's' + str(quantifier_index))
-            formula_inp_copy = renameQuantifierVariable(formula_inp_copy, old, new)
-            quantifier_index += 1
-    #print(formula_inp)
-    #formula_inp_duplicate = formula_inp
-    if formula_inp.data in ['exist_scheduler', 'forall_scheduler']:
-        formula_inp.children[1] = formula_inp_copy
-    
-    while len(formula_inp_duplicate.children) > 0 and type(formula_inp_duplicate.children[0]) == Token:
-        if formula_inp_duplicate.data in ['exist_scheduler', 'forall_scheduler', 'exist_state', 'forall_state']:
-            formula_inp_duplicate = formula_inp_duplicate.children[1]
-    
-    return formula_inp_duplicate, formula_inp, nos_of_quantifier
-'''
-
-
 def checkStateQuantifiers(hyperproperty):
     formula_duplicate = hyperproperty
     no_of_quantifier = 0
     variable_indices = set() # list of state variable names/indices in order of quantification
     while len(formula_duplicate.children) > 0:
-        if formula_duplicate.data in ['exist_scheduler', 'forall_scheduler']:
+        if formula_duplicate.data in ['exist_scheduler']: # , 'forall_scheduler'
             formula_duplicate = formula_duplicate.children[1]
         elif formula_duplicate.data in ['exist_state', 'forall_state']:
             no_of_quantifier += 1
@@ -193,19 +107,24 @@ def checkStutterQuantifiers(hyperproperty, state_indices):
     quant_stutter_state_quantifier = dict() # mapping quantified variables, dict of the form {stutter : state}, i.e. dict[stutter quantifier] = state_quantifier
     variable_indices = []
     while len(formula_duplicate.children) > 0 and type(formula_duplicate.children[0]) == Token:
-        if formula_duplicate.data in ['exist_scheduler', 'forall_scheduler', 'exist_state', 'forall_state']:
+        if formula_duplicate.data in ['exist_scheduler', 'exist_state', 'forall_state']: # , 'forall_scheduler'
             formula_duplicate = formula_duplicate.children[1]
-        elif formula_duplicate.data in ['forall_stutter', 'exist_stutter']:
+        elif formula_duplicate.data in ['exist_stutter']: # , 'forall_stutter'
             no_of_quantifier += 1
             quant_stutter_state_quantifier[int(formula_duplicate.children[0].value[1:])] = int(formula_duplicate.children[1].children[0].value[1:])
             variable_indices.append(int(formula_duplicate.children[0].value[1:]))
             formula_duplicate = formula_duplicate.children[2]
     associated_state_indices = quant_stutter_state_quantifier.values()
+
+    # check there exists a stutter-var for every state quantifier
     for i in state_indices:
         if i not in associated_state_indices:
             raise ValueError(f"State s{i} is not associated with a stutter-scheduler")
-    # todo check that all states associated with some stutter-quantifier are also quantified
-    # extra TODO: add handling for missing stutter quantifiers (for all state, no stuttering)
+    # check that for each stutter-quantifier the associated state belongs to a state quantifier
+    for i in associated_state_indices:
+        if i not in state_indices:
+            raise ValueError(f"State s{i} is not quantified")
+
     # check all quantified stutter-sched variables are named correctly and occur in the correct order
     if list(range(1, len(variable_indices)+1)) != variable_indices:
         raise ValueError("The stutter variables are not named t1, ..., tn (or are not quantified in this order).")
@@ -217,11 +136,11 @@ def checkStutterQuantifiers(hyperproperty, state_indices):
             rel_quant.add(int(name[1:]))
     if rel_quant != quant_stutter_state_quantifier.keys():
         raise ValueError("The variables used in the formula do not match the quantified variables.")
-    # real_stutter_state_quantifier = {key: quant_stutter_state_quantifier[key] for key in rel_quant} # only those pairs where the stutter-variable occurs in the formula
+
     return formula_duplicate, quant_stutter_state_quantifier
 
 
-def negateForallProperty(parsed_property):
+"""def negateForallProperty(parsed_property):
     temp_traversed_property = parsed_property
     index_for_child = -1
     while len(temp_traversed_property.children) > 0:
@@ -255,4 +174,4 @@ def negateForallProperty(parsed_property):
     else:
         temp_traversed_property.children[0] = Tree('not', [temp_traversed_property.children[0]])
 
-    return temp_traversed_property.children[0]
+    return temp_traversed_property.children[0]"""
