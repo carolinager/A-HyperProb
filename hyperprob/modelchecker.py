@@ -332,16 +332,13 @@ class ModelChecker:
                     list_of_actions[int(li.name()[2:])] = z3model[li]
                 if li.name()[0] == 't':
                     stuttersched_assignments.append((li.name(), z3model[li]))
-        if truth.r == 1:
-            return True, list_of_actions, set_of_holds, stuttersched_assignments, self.solver.statistics(), z3_time
-        elif truth.r == -1:
-            return False, list_of_actions, set_of_holds, stuttersched_assignments, self.solver.statistics(), z3_time
+        return truth, list_of_actions, set_of_holds, stuttersched_assignments, self.solver.statistics(), z3_time
 
     def printResult(self, smt_end_time, scheduler_quantifier):
         common.colourinfo("Checking...", False)
         smt_result, actions, holds, stuttersched_assignments, statistics, z3_time = self.checkResult()
         if scheduler_quantifier == 'exists':
-            if smt_result:
+            if smt_result.r == 1:
                 # todo adjust to more fine-grained output depending on different quantifier combinations?
                 common.colouroutput("The property HOLDS!")
                 print("\nThe values of variables of the witness are:")
@@ -354,10 +351,12 @@ class ModelChecker:
                     holds)  # for each assignment: state associated with first stutter-sched var is listed first, and so on
                 print("\nChoose stutterscheduler as follows:")
                 print(stuttersched_assignments)  # todo print nicer
-            else:
+            elif smt_result.r == -1:
                 common.colourerror("The property DOES NOT hold!")
+            else:
+                common.colourerror("Solver returns unknown")
         elif scheduler_quantifier == 'forall':
-            if smt_result:
+            if smt_result.r == 1:
                 common.colourerror("The property DOES NOT hold!")
                 print("\nThe values of variables of a counterexample are:")
                 print("\nIf both actions are available at a state:")
@@ -369,8 +368,10 @@ class ModelChecker:
                     holds)  # for each assignment: state associated with first stutter-sched var is listed first, and so on
                 print("\nChoose stutterscheduler as follows:")
                 print(stuttersched_assignments)  # todo print nicer
+            elif smt_result.r == -1:
+                common.colourerror("The property DOES NOT hold!")
             else:
-                common.colouroutput("The property HOLDS!")
+                common.colourerror("Solver returns unknown")
         common.colourinfo("\nTime to encode in seconds: " + str(round(smt_end_time, 2)), False)
         common.colourinfo("Time required by z3 in seconds: " + str(round(z3_time, 2)), False)
         common.colourinfo(
