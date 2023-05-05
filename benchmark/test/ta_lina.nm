@@ -1,6 +1,6 @@
 mdp
 
-const int n = 2;
+const int n = 1;
 
 module basic
 
@@ -10,23 +10,29 @@ module basic
        l   : [0..1];                 // indicate whether instructions in if should be executed
        fin : [0..1];                 // indicate whether exponentiation thread finished
 
-       [whileIfTrue] (l=0)&(ref>0)&(b>=ref)&(fin=0) -> 1 : (b'=b-ref)&(ref'=floor(ref/2))&(l'=1); // b(i)=1
-       [whileIfFalse] (l=0)&(ref>0)&(b<ref)&(fin=0)  -> 1 : (ref'=floor(ref/2));                   // b(i)=0
+       [] (l=0)&(ref>0)&(b>=ref)&(fin=0) -> 1 : (b'=b-ref)&(ref'=floor(ref/2))&(l'=1); // b(i)=1, whileIfTrue
+       [] (l=0)&(ref>0)&(b<ref)&(fin=0)  -> 1 : (ref'=floor(ref/2));                   // b(i)=0, whileIfFalse
 
        //[s3] (l=0)&(ref=1)&(b>=ref)&(fin=0) -> 1 : (b'=0)&(ref'=0)&(l'=1);  // b(i)=1
        //[s4] (l=0)&(ref=1)&(b<ref)&(fin=0)  -> 1 : (ref'=0);                // b(i)=0
 
-       [insideIf] (l=1)&(fin=0) -> 1 : (l'=0);  // execute if-condition
+       [] (l=1)&(fin=0) -> 1 : (l'=0);  // execute if-condition, insideIf
 
-       [whileloopfalse] (ref=0)&(fin=0)&(l=0) -> 1 : (fin'=1);
-       [mexpdone] (fin=1) -> 1 : true ;         // loop forever after exponentiation thread finished
+       [] (ref=0)&(fin=0)&(l=0) -> 1 : (fin'=1); // whileloopfalse
+       [] (fin=1) -> 1 : true ;         // loop forever after exponentiation thread finished, mexpdone
 
-       [attacker] (j<2*n)&(fin=0) -> 1 : (j'=j+1);      // attacker thread
+       [] (j<2*n)&(fin=0) -> 1 : (j'=j+1);      // attacker thread, attacker
 
 
 endmodule
 
 init  (ref=pow(2,n-1))&(l=0)&(j=0)&(fin=0) endinit
 
+label "i" = (ref=pow(2,n-1))&(l=0)&(j=0)&(fin=0);
 label "fin"  = (fin=1);
 label "loop" = (l=1);
+label "j0" = (j=0);
+label "j1" = (j=1);
+label "j2" = (j=2);
+label "j3" = (j=3);
+label "j4" = (j=4);
