@@ -3,7 +3,7 @@ import time
 import itertools
 
 from lark import Tree
-from z3 import Solver, Bool, Real, Int, Or, sat, And, Implies, RealVal, Sum
+from z3 import Solver, Bool, Real, Int, Or, sat, And, Implies, RealVal, Sum, IntVal
 
 from hyperprob.utility import common
 from hyperprob import propertyparser
@@ -109,7 +109,7 @@ class ModelChecker:
                 action = list(A)[0]
                 name = "a_" + str(set(A)) + "_" + str(action)
                 self.addToVariableList(name)
-                scheduler_restrictions.append(self.dictOfReals[name] == RealVal(1))
+                scheduler_restrictions.append(self.dictOfReals[name] == RealVal(1).as_fraction())
             else:
                 for action in A:
                     name = "a_" + str(set(A)) + "_" + str(
@@ -118,13 +118,13 @@ class ModelChecker:
                     # probabilistic scheduler
                     maxVal = self.maxSchedProb
                     minVal = 1 - maxVal
-                    scheduler_restrictions.append(self.dictOfReals[name] > RealVal(minVal))
-                    scheduler_restrictions.append(self.dictOfReals[name] < RealVal(maxVal))
+                    scheduler_restrictions.append(self.dictOfReals[name] >= RealVal(minVal).as_fraction())
+                    scheduler_restrictions.append(self.dictOfReals[name] <= RealVal(maxVal).as_fraction())
                     # deterministic scheduler (inefficient to encode it like this)
                     # scheduler_restrictions.append(Or(self.dictOfReals[name] == RealVal(0),
                     #                                  self.dictOfReals[name] == RealVal(1)))
                     sum_over_probs.append(self.dictOfReals[name])
-                scheduler_restrictions.append(Sum(sum_over_probs) == RealVal(1))
+                scheduler_restrictions.append(Sum(sum_over_probs) == RealVal(1).as_fraction())
 
         # todo: if we dont add an option for general memoryless prob. schedulers: replace a_s_x by a_A_x everywhere in semantic encoding instead of doing the following
         for state in self.model.parsed_model.states:
@@ -134,7 +134,7 @@ class ModelChecker:
                 action = list(state.actions)[0]
                 name = name_s + str(action.id)
                 self.addToVariableList(name)
-                scheduler_restrictions.append(self.dictOfReals[name] == RealVal(1))
+                scheduler_restrictions.append(self.dictOfReals[name] == RealVal(1).as_fraction())
             else:
                 for act in state.actions:
                     name_s_a = name_s + str(act.id)
@@ -180,8 +180,8 @@ class ModelChecker:
                     self.addToVariableList(name)
                     # for stutter_length in range(0, self.stutterLength):
                     #    list_of_equations.append(self.dictOfInts[name] == int(stutter_length)) # todo unnecessary, bounds would suffice ?
-                    lower_bound = self.dictOfInts[name] >= int(0)
-                    upper_bound = self.dictOfInts[name] < int(self.stutterLength)
+                    lower_bound = self.dictOfInts[name] >= IntVal(0)
+                    upper_bound = self.dictOfInts[name] < IntVal(self.stutterLength)
                     list_over_actions.append(And(lower_bound,
                                                  upper_bound))  # Or(list_of_equations),
                     self.no_of_subformula += 1
@@ -300,7 +300,7 @@ class ModelChecker:
                     for action in state.actions:
                         name_tau = "t_" + str(i + 1) + "_" + str(state) + "_" + str(action.id)
                         index_of_pair = dict_pair_index[(state.id, action.id)]
-                        list_of_eqs.append(self.dictOfInts[name_tau] == stutter_sched[index_of_pair])
+                        list_of_eqs.append(self.dictOfInts[name_tau] == IntVal(stutter_sched[index_of_pair]))
                     list_over_actions.append(And(list_of_eqs))
                     self.no_of_subformula += 1
                 list_over_states.append(And(list_over_actions))
@@ -374,14 +374,17 @@ class ModelChecker:
             list_of_corr_stutter_qs = [[k for k, v in self.stutter_state_mapping.items() if v == q + 1] for q in range(self.no_of_state_quantifier)]
 
             for li in z3model:
-                if li.name()[0] == 'h' and li.name()[-1] == '0' and z3model[li]:
+                if li.name()[0] == 'h' and z3model[li]: # and li.name().split("_")[-1] == '0'
                     state_tuple_str = li.name()[6:-2]
                     state_tuple_by_stutter = [state_tuple_str[i * 6 + (i + 1)] for i in range(self.no_of_stutter_quantifier)]
                     stutter_set = {state_tuple_str[i * 6 + (i + 1) + 3] for i in range(self.no_of_stutter_quantifier)}
                     states_by_state_qs = [[state_tuple_by_stutter[i - 1] for i in x] for x in list_of_corr_stutter_qs]
                     if stutter_set == {'0'} and {len(set(x)) for x in states_by_state_qs} == {1}:
                         state_list = [x[0] for x in states_by_state_qs]
-                        set_of_holds.add(tuple(state_list))
+                        if li.name().split("_")[-1] == '0':
+                            set_of_holds.add(tuple(state_list))
+                        else:
+                            set_of_holds.add(tuple(state_list + ['index ' + str(li.name().split("_")[-1])]))
                 elif li.name()[0] == 'a' and len(li.name()) == 5: # todo adjust depending on scheduler restrictions
                     list_of_actions.append((li.name(), z3model[li]))
                 elif li.name()[0] == 't':

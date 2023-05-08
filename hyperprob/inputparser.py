@@ -8,6 +8,6 @@ def parseArguments():
     parser.add_argument('-stutterLength', required=False, help='Memory size for stutter scheduler')
     parser.add_argument('--checkModel', action='store_true', help='check if model file can be parsed')
     parser.add_argument('--checkProperty', action='store_true', help='check if property file can be parsed')
-    parser.add_argument('--maxSchedProb', required=False, help='strict upper bound for the probabilities assigned by the scheduler')
+    parser.add_argument('--maxSchedProb', required=False, help='upper bound for the probabilities assigned by the scheduler')
     args = parser.parse_args()
     return args
