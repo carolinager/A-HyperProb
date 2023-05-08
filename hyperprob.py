@@ -23,7 +23,11 @@ def main():
             else:
                 stutterLength = 1
             model.parseModel(True)
-            modelchecker = ModelChecker(model, hyperproperty, stutterLength)
+            if input_args.maxSchedProb:
+                maxSchedProb = float(input_args.maxSchedProb)
+            else:
+                maxSchedProb = 1
+            modelchecker = ModelChecker(model, hyperproperty, stutterLength, maxSchedProb)
             modelchecker.modelCheck()
         print("\n")
     except Exception as err:

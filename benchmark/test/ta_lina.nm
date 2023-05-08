@@ -29,10 +29,10 @@ endmodule
 init  (ref=pow(2,n-1))&(l=0)&(j=0)&(fin=0) endinit
 
 label "i" = (ref=pow(2,n-1))&(l=0)&(j=0)&(fin=0);
-label "fin"  = (fin=1);
+# label "fin"  = (fin=1);
 label "loop" = (l=1);
-label "j0" = (j=0);
-label "j1" = (j=1);
-label "j2" = (j=2);
-label "j3" = (j=3);
-label "j4" = (j=4);
+label "j0" = (j=0)&(fin=1);
+label "j1" = (j=1)&(fin=1);
+label "j2" = (j=2)&(fin=1);
+label "j3" = (j=3)&(fin=1);
+label "j4" = (j=4)&(fin=1);

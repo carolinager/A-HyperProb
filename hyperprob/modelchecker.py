@@ -11,11 +11,12 @@ from hyperprob.sementicencoder import SemanticsEncoder
 
 
 class ModelChecker:
-    def __init__(self, model, hyperproperty, lengthOfStutter):
+    def __init__(self, model, hyperproperty, lengthOfStutter, maxSchedProb):
         self.model = model
         self.initial_hyperproperty = hyperproperty  # object of property class
         self.solver = Solver()
         self.stutterLength = lengthOfStutter  # default value 1 (no stutter)
+        self.maxSchedProb = maxSchedProb
         self.list_of_subformula = []
         self.dictOfReals = dict()
         self.dictOfBools = dict()
@@ -115,8 +116,10 @@ class ModelChecker:
                         action)  # a_A_x is probability of action x at a state with enabled actions A
                     self.addToVariableList(name)
                     # probabilistic scheduler
-                    scheduler_restrictions.append(self.dictOfReals[name] > RealVal(0))
-                    scheduler_restrictions.append(self.dictOfReals[name] < RealVal(1))
+                    maxVal = self.maxSchedProb
+                    minVal = 1 - maxVal
+                    scheduler_restrictions.append(self.dictOfReals[name] > RealVal(minVal))
+                    scheduler_restrictions.append(self.dictOfReals[name] < RealVal(maxVal))
                     # deterministic scheduler (inefficient to encode it like this)
                     # scheduler_restrictions.append(Or(self.dictOfReals[name] == RealVal(0),
                     #                                  self.dictOfReals[name] == RealVal(1)))
