@@ -639,9 +639,9 @@ class SemanticsEncoder:
             prob_phi = 'prob' + str_r_state + "_" + str(index_of_phi)
             self.addToVariableList(prob_phi)
             first_and = Or(
-                And(self.dictOfReals[holdsToInt1] == float(1),
+                And(self.dictOfReals[holdsToInt1] == RealVal(1),
                     self.dictOfBools[holds1]),
-                And(self.dictOfReals[holdsToInt1] == float(0),
+                And(self.dictOfReals[holdsToInt1] == RealVal(0),
                     Not(self.dictOfBools[holds1])))
             self.no_of_subformula += 3
             # new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
@@ -747,14 +747,14 @@ class SemanticsEncoder:
             prob_phi += '_' + str(index_of_phi)
             self.addToVariableList(prob_phi)
 
-            new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
-            new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+            new_prob_const_0 = self.dictOfReals[prob_phi] >= RealVal(0)
+            new_prob_const_1 = self.dictOfReals[prob_phi] <= RealVal(1)
 
             first_implies = And(Implies(self.dictOfBools[holds2],
-                                        (self.dictOfReals[prob_phi] == float(1))),
+                                        (self.dictOfReals[prob_phi] == RealVal(1))),
                                 Implies(And(Not(self.dictOfBools[holds1]),
                                             Not(self.dictOfBools[holds2])),
-                                        (self.dictOfReals[prob_phi] == float(0))),
+                                        (self.dictOfReals[prob_phi] == RealVal(0))),
                                 new_prob_const_0,
                                 new_prob_const_1)
             self.solver.add(first_implies)
@@ -832,7 +832,7 @@ class SemanticsEncoder:
                         self.addToVariableList(d_current)
                         d_succ += '_' + str(index_of_phi2)
                         self.addToVariableList(d_succ)
-                        loop_condition.append(And(sched_prob > 0,
+                        loop_condition.append(And(sched_prob > RealVal(0),
                                                   Or(self.dictOfBools[holds_succ],
                                                      self.dictOfReals[d_current] > self.dictOfReals[d_succ])
                                                   ))
@@ -840,7 +840,7 @@ class SemanticsEncoder:
 
                 implies_antecedent_and1 = self.dictOfReals[prob_phi] == sum_of_probs
                 self.no_of_subformula += 1
-                implies_antecedent_and2 = Implies(self.dictOfReals[prob_phi] > 0,
+                implies_antecedent_and2 = Implies(self.dictOfReals[prob_phi] > RealVal(0),
                                                   Or(loop_condition))
                 self.no_of_subformula += 2
                 implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
@@ -884,9 +884,9 @@ class SemanticsEncoder:
                 self.addToVariableList(name2)
 
                 eq1 = Implies(self.dictOfBools[name2],
-                              self.dictOfReals[name1] == float(1))
+                              self.dictOfReals[name1] == RealVal(1))
                 eq2 = Implies(Not(self.dictOfBools[name2]),
-                              self.dictOfReals[name1] == float(0))
+                              self.dictOfReals[name1] == RealVal(0))
                 self.no_of_subformula += 2
                 self.solver.add(And(eq1, eq2))
                 self.no_of_subformula += 1
@@ -934,14 +934,14 @@ class SemanticsEncoder:
                 prob_phi += '_' + str(index_of_phi)
                 self.addToVariableList(prob_phi)
 
-                new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
-                new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+                new_prob_const_0 = self.dictOfReals[prob_phi] >= RealVal(0)
+                new_prob_const_1 = self.dictOfReals[prob_phi] <= RealVal(1)
 
                 first_implies = And(Implies(self.dictOfBools[holds2],
-                                            (self.dictOfReals[prob_phi] == float(1))),
+                                            (self.dictOfReals[prob_phi] == RealVal(1))),
                                     Implies(And(Not(self.dictOfBools[holds1]),
                                                 Not(self.dictOfBools[holds2])),
-                                            (self.dictOfReals[prob_phi] == float(0))),
+                                            (self.dictOfReals[prob_phi] == RealVal(0))),
                                     new_prob_const_0,
                                     new_prob_const_1)
                 self.no_of_subformula += 4
@@ -1040,11 +1040,11 @@ class SemanticsEncoder:
                 prob_phi += '_' + str(index_of_phi)
                 self.addToVariableList(prob_phi)
 
-                new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
-                new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+                new_prob_const_0 = self.dictOfReals[prob_phi] >= RealVal(0)
+                new_prob_const_1 = self.dictOfReals[prob_phi] <= RealVal(1)
 
                 first_implies = And(Implies(Not(self.dictOfBools[holds1]),
-                                            (self.dictOfReals[prob_phi] == float(0))),
+                                            (self.dictOfReals[prob_phi] == RealVal(0))),
                                     new_prob_const_0,
                                     new_prob_const_1)
                 self.solver.add(first_implies)
@@ -1069,7 +1069,7 @@ class SemanticsEncoder:
                         for action in self.model.dict_of_acts[r_state[relevant_quantifier[l] - 1][0]]:
                             stu_name = 't_' + str(relevant_quantifier[l]) + '_' + \
                                        str(r_state[relevant_quantifier[l] - 1][0]) + '_' + str(action)
-                            precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l][action]))
+                            precond_list.append(self.dictOfInts[stu_name] == Int(h_tuple[l][action]))
                     implies_precedent = And(self.dictOfBools[holds1],
                                             And(precond_list))
                     self.no_of_subformula += 2
@@ -1128,13 +1128,11 @@ class SemanticsEncoder:
             prob_phi += str_r_state + '_' + str(index_of_phi)
             self.addToVariableList(prob_phi)
 
-            new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
-            new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+            # new_prob_const_0 = self.dictOfReals[prob_phi] >= RealVal(0)
+            # new_prob_const_1 = self.dictOfReals[prob_phi] <= RealVal(1)
 
             first_implies = And(Implies(self.dictOfBools[holds1],
-                                        (self.dictOfReals[prob_phi] == float(1))),
-                                new_prob_const_0,
-                                new_prob_const_1)
+                                        (self.dictOfReals[prob_phi] == RealVal(1))))
             self.solver.add(first_implies)
             self.no_of_subformula += 3
 
@@ -1157,12 +1155,12 @@ class SemanticsEncoder:
                     for action in self.model.dict_of_acts[r_state[relevant_quantifier[l] - 1][0]]:
                         stu_name = 't_' + str(relevant_quantifier[l]) + '_' + \
                                    str(r_state[relevant_quantifier[l] - 1][0]) + '_' + str(action)
-                        precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l][action]))
+                        precond_list.append(self.dictOfInts[stu_name] == Int(h_tuple[l][action]))
                 implies_precedent = And(Not(self.dictOfBools[holds1]),
                                         And(precond_list))
                 self.no_of_subformula += 2
 
-                sum_of_probs = RealVal(0).as_fraction()
+                sum_of_probs = RealVal(0) #.as_fraction()
                 loop_condition = []
 
                 for ca in combined_acts:
@@ -1175,8 +1173,8 @@ class SemanticsEncoder:
                         holds_succ = 'holds'
                         d_current = 'd'
                         d_succ = 'd'
-                        product = RealVal(1).as_fraction()
-                        sched_prob = RealVal(1).as_fraction()
+                        product = RealVal(1) #.as_fraction()
+                        sched_prob = RealVal(1) #.as_fraction()
 
                         for l in range(1, self.no_of_state_quantifier + 1):
                             if l in relevant_quantifier:
@@ -1185,7 +1183,7 @@ class SemanticsEncoder:
                                 prob_succ += '_' + succ_state
                                 holds_succ += '_' + succ_state
                                 d_succ += '_' + succ_state
-                                product *= RealVal(cs[l_index][1]).as_fraction()
+                                product *= RealVal(cs[l_index][1]) #.as_fraction()
                                 product *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                                 sched_prob *= self.dictOfReals["a_" + str(r_state[l - 1][0]) + "_" + str(ca[l_index])]
                             else:
@@ -1207,7 +1205,7 @@ class SemanticsEncoder:
                         self.addToVariableList(d_current)
                         d_succ += '_' + str(index_of_phi1)
                         self.addToVariableList(d_succ)
-                        loop_condition.append(And(sched_prob > 0,
+                        loop_condition.append(And(sched_prob > RealVal(0),
                                                   Or(self.dictOfBools[holds_succ],
                                                      self.dictOfReals[d_current] > self.dictOfReals[d_succ])
                                                   ))
@@ -1215,7 +1213,7 @@ class SemanticsEncoder:
 
                 implies_antecedent_and1 = self.dictOfReals[prob_phi] == sum_of_probs
                 self.no_of_subformula += 1
-                implies_antecedent_and2 = Implies(self.dictOfReals[prob_phi] > 0,
+                implies_antecedent_and2 = Implies(self.dictOfReals[prob_phi] > RealVal(0),
                                                   Or(loop_condition))
                 self.no_of_subformula += 2
                 implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
@@ -1243,10 +1241,10 @@ class SemanticsEncoder:
             prob_phi = 'prob'
             prob_phi += str_r_state + '_' + str(index_of_phi)
             self.addToVariableList(prob_phi)
-            new_prob_const_0 = self.dictOfReals[prob_phi] >= float(0)
-            new_prob_const_1 = self.dictOfReals[prob_phi] <= float(1)
+            new_prob_const_0 = self.dictOfReals[prob_phi] >= RealVal(0)
+            new_prob_const_1 = self.dictOfReals[prob_phi] <= RealVal(1)
             first_implies = And(Implies((Not(self.dictOfBools[holds1])),
-                                        (self.dictOfReals[prob_phi] == float(0))),
+                                        (self.dictOfReals[prob_phi] == RealVal(0))),
                                 new_prob_const_0,
                                 new_prob_const_1)
             self.solver.add(first_implies)
@@ -1271,7 +1269,7 @@ class SemanticsEncoder:
                     for action in self.model.dict_of_acts[r_state[relevant_quantifier[l] - 1][0]]:
                         stu_name = 't_' + str(relevant_quantifier[l]) + '_' + \
                                    str(r_state[relevant_quantifier[l] - 1][0]) + '_' + str(action)
-                        precond_list.append(self.dictOfInts[stu_name] == int(h_tuple[l][action]))
+                        precond_list.append(self.dictOfInts[stu_name] == Int(h_tuple[l][action]))
                 implies_precedent = And(self.dictOfBools[holds1],
                                         And(precond_list))
                 self.no_of_subformula += 2
@@ -1321,7 +1319,7 @@ class SemanticsEncoder:
                         self.addToVariableList(d_current)
                         d_succ += '_' + str(index_of_phi1)
                         self.addToVariableList(d_succ)
-                        loop_condition.append(And(sched_prob > 0,
+                        loop_condition.append(And(sched_prob > RealVal(0),
                                                   Or(Not(self.dictOfBools[holds_succ]),
                                                      self.dictOfReals[d_current] > self.dictOfReals[d_succ])
                                                   ))
@@ -1329,7 +1327,7 @@ class SemanticsEncoder:
 
                 implies_antecedent_and1 = self.dictOfReals[prob_phi] == sum_of_probs
                 self.no_of_subformula += 1
-                implies_antecedent_and2 = Implies(self.dictOfReals[prob_phi] < 1,
+                implies_antecedent_and2 = Implies(self.dictOfReals[prob_phi] < RealVal(1),
                                                   Or(loop_condition))
                 self.no_of_subformula += 2
                 implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)

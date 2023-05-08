@@ -127,13 +127,38 @@ class ModelChecker:
         for state in self.model.parsed_model.states:
             name_s = "a_" + str(state.id) + "_"  # a_s_x is probability of action x in state s
             name_A = "a_" + str(set([a.id for a in state.actions])) + "_"
+            if len(state.actions) == 1:
+                action = list(state.actions)[0]
+                name = name_s + str(action.id)
+                self.addToVariableList(name)
+                scheduler_restrictions.append(self.dictOfReals[name] == RealVal(1))
+            else:
+                for act in state.actions:
+                    name_s_a = name_s + str(act.id)
+                    self.addToVariableList(name_s_a)
+
+                    name_A_a = name_A + str(act.id)
+                    scheduler_restrictions.append(self.dictOfReals[name_s_a] == self.dictOfReals[name_A_a])
+
+        # general probabilistic memoryless stutter-scheduler:
+        """        for state in self.model.parsed_model.states:
+            name_s = "a_" + str(state.id) + "_"  # a_s_x is probability of action x in state s
             sum_of_probs = RealVal(0)
-            for act in state.actions:
-                name_s_a = name_s + str(act.id)
-                name_A_a = name_A + str(act.id)
-                self.addToVariableList(name_s_a)
-                sum_of_probs += self.dictOfReals[name_s_a]
-                scheduler_restrictions.append(self.dictOfReals[name_s_a] == self.dictOfReals[name_A_a])
+            if len(state.actions) == 1: #
+                action = list(state.actions)[0] #
+                name = name_s + str(action.id) #
+                self.addToVariableList(name) #
+                scheduler_restrictions.append(self.dictOfReals[name] == RealVal(1)) #
+            else:
+                for act in state.actions:
+                    name_s_a = name_s + str(act.id)
+                    self.addToVariableList(name_s_a)
+
+                    sum_of_probs += self.dictOfReals[name_s_a]
+
+                    scheduler_restrictions.append(self.dictOfReals[name_s_a] > RealVal(0)) #
+                    scheduler_restrictions.append(self.dictOfReals[name_s_a] < RealVal(1)) #
+                scheduler_restrictions.append(Sum(sum_of_probs) == RealVal(1)) #"""
 
         self.solver.add(And(scheduler_restrictions))
         self.no_of_subformula += 1
@@ -363,6 +388,7 @@ class ModelChecker:
         return truth, list_of_actions, set_of_holds, stuttersched_assignments, self.solver.statistics(), z3_time, list_of_probs
 
     def printResult(self, smt_end_time, scheduler_quantifier):
+        print(self.model.dict_of_acts_tran)
         common.colourinfo("Checking...", False)
         smt_result, actions, holds, stuttersched_assignments, statistics, z3_time, list_of_probs = self.checkResult()
         if scheduler_quantifier == 'exists':
