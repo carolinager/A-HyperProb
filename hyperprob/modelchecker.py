@@ -390,10 +390,16 @@ class ModelChecker:
 
             for li in z3model:
                 if li.name()[0] == 'h' and z3model[li] and li.name().split("_")[-1] == '0':
-                    state_tuple_str = li.name()[6:-2]
-                    state_tuple_by_stutter = [state_tuple_str[i * 6 + (i + 1)] for i in range(self.no_of_stutter_quantifier)]
-                    stutter_set = {state_tuple_str[i * 6 + (i + 1) + 3] for i in range(self.no_of_stutter_quantifier)}
-                    states_by_state_qs = [[state_tuple_by_stutter[i - 1] for i in x] for x in list_of_corr_stutter_qs]
+                    #state_tuple_str = li.name()[6:-2]
+                    #state_tuple_by_stutter = [state_tuple_str[i * 6 + (i + 1)] for i in range(self.no_of_stutter_quantifier)]
+                    #stutter_set = {state_tuple_str[i * 6 + (i + 1) + 3] for i in range(self.no_of_stutter_quantifier)}
+                    #states_by_state_qs = [[state_tuple_by_stutter[i - 1] for i in x] for x in list_of_corr_stutter_qs]
+
+                    state_tuples_list = li.name().split("_")[1:-1]
+                    states_list = [elt.split(", ")[0][1:] for elt in state_tuples_list]
+                    stutter_set = {elt.split(", ")[1][:-1] for elt in state_tuples_list}
+                    states_by_state_qs = [[states_list[i-1] for i in x] for x in list_of_corr_stutter_qs]
+
                     if stutter_set == {'0'} and {len(set(x)) for x in states_by_state_qs} == {1}:
                         state_list = [x[0] for x in states_by_state_qs]
                         # if li.name().split("_")[-1] == '0':
@@ -435,7 +441,7 @@ class ModelChecker:
                         " and action " + stutter_step[0].split("_")[3] +
                         " choose stuttering duration " + str(stutter_step[1]),
                         False)
-                print("\nThe following state variable assignments satisfy the property:")
+                print("\nThe following state variable assignments (s1, ..., sn) satisfy the property:")
                 print(holds)
             elif smt_result.r == -1:
                 common.colourerror("The property DOES NOT hold!")
