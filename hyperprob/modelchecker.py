@@ -3,7 +3,7 @@ import time
 import itertools
 
 from lark import Tree
-from z3 import Solver, Bool, Real, Int, Or, sat, And, Implies, RealVal, Sum, IntVal
+from z3 import Solver, SolverFor, Bool, Real, Or, sat, And, Implies, RealVal, Sum, set_param, Context
 
 from hyperprob.utility import common
 from hyperprob import propertyparser
@@ -14,13 +14,15 @@ class ModelChecker:
     def __init__(self, model, hyperproperty, lengthOfStutter, maxSchedProb):
         self.model = model
         self.initial_hyperproperty = hyperproperty  # object of property class
-        self.solver = Solver()
+        # set_param(proof=True)
+        # ctx = Context()
+        self.solver = SolverFor("QF_NRA")
         self.stutterLength = lengthOfStutter  # default value 1 (no stutter)
         self.maxSchedProb = maxSchedProb
         self.list_of_subformula = []
         self.dictOfReals = dict()
         self.dictOfBools = dict()
-        self.dictOfInts = dict()
+        self.dictOfInts = dict() # can be removed
         self.no_of_subformula = 0
         self.no_of_state_quantifier = 0
         self.no_of_stutter_quantifier = 0
@@ -59,6 +61,17 @@ class ModelChecker:
                                                self.stutterLength,
                                                self.stutter_state_mapping)
             semanticEncoder.encodeSemantics(non_quantified_property)
+
+            """            x = [self.dictOfReals['t_1_0_0'] == 1,
+                 self.dictOfReals['t_1_0_1'] == 0,
+                 self.dictOfReals['t_1_1_0'] == 0,
+                 self.dictOfReals['t_1_1_1'] == 1 #,
+                 #self.dictOfReals['t_2_0_0'] == 1,
+                 #self.dictOfReals['t_2_0_1'] == 0,
+                 #self.dictOfReals['t_2_1_0'] == 0,
+                 #self.dictOfReals['t_2_1_1'] == 0
+                 ]
+            self.solver.add(And(x))"""
 
             list_of_prob_restrict = []
             for name in self.dictOfReals.keys():
@@ -109,7 +122,7 @@ class ModelChecker:
                 action = list(A)[0]
                 name = "a_" + str(set(A)) + "_" + str(action)
                 self.addToVariableList(name)
-                scheduler_restrictions.append(self.dictOfReals[name] == RealVal(1).as_fraction())
+                scheduler_restrictions.append(self.dictOfReals[name] == RealVal(1)) # .as_fraction()
             else:
                 for action in A:
                     name = "a_" + str(set(A)) + "_" + str(
@@ -118,13 +131,13 @@ class ModelChecker:
                     # probabilistic scheduler
                     maxVal = self.maxSchedProb
                     minVal = 1 - maxVal
-                    scheduler_restrictions.append(self.dictOfReals[name] >= RealVal(minVal).as_fraction())
-                    scheduler_restrictions.append(self.dictOfReals[name] <= RealVal(maxVal).as_fraction())
+                    scheduler_restrictions.append(self.dictOfReals[name] >= RealVal(minVal)) # .as_fraction()
+                    scheduler_restrictions.append(self.dictOfReals[name] <= RealVal(maxVal)) # .as_fraction()
                     # deterministic scheduler (inefficient to encode it like this)
                     # scheduler_restrictions.append(Or(self.dictOfReals[name] == RealVal(0),
                     #                                  self.dictOfReals[name] == RealVal(1)))
                     sum_over_probs.append(self.dictOfReals[name])
-                scheduler_restrictions.append(Sum(sum_over_probs) == RealVal(1).as_fraction())
+                scheduler_restrictions.append(Sum(sum_over_probs) == RealVal(1)) #.as_fraction()
 
         # todo: if we dont add an option for general memoryless prob. schedulers: replace a_s_x by a_A_x everywhere in semantic encoding instead of doing the following
         for state in self.model.parsed_model.states:
@@ -134,7 +147,7 @@ class ModelChecker:
                 action = list(state.actions)[0]
                 name = name_s + str(action.id)
                 self.addToVariableList(name)
-                scheduler_restrictions.append(self.dictOfReals[name] == RealVal(1).as_fraction())
+                scheduler_restrictions.append(self.dictOfReals[name] == RealVal(1)) # .as_fraction()
             else:
                 for act in state.actions:
                     name_s_a = name_s + str(act.id)
@@ -174,16 +187,17 @@ class ModelChecker:
             for state in self.model.parsed_model.states:
                 list_over_actions = []
                 for action in state.actions:
-                    # list_of_equations = []
+                    list_of_equations = []
                     # t_i_s_x means stutter duration for stutter quantifier i and state s and action x
                     name = "t_" + str(quantifier + 1) + "_" + str(state.id) + "_" + str(action.id)
                     self.addToVariableList(name)
-                    # for stutter_length in range(0, self.stutterLength):
-                    #    list_of_equations.append(self.dictOfInts[name] == int(stutter_length)) # todo unnecessary, bounds would suffice ?
-                    lower_bound = self.dictOfInts[name] >= IntVal(0)
-                    upper_bound = self.dictOfInts[name] < IntVal(self.stutterLength)
-                    list_over_actions.append(And(lower_bound,
-                                                 upper_bound))  # Or(list_of_equations),
+                    for stutter_length in range(0, self.stutterLength):
+                        list_of_equations.append(self.dictOfReals[name] == RealVal(stutter_length))
+                    # lower_bound = self.dictOfInts[name] >= IntVal(0)
+                    # upper_bound = self.dictOfInts[name] < IntVal(self.stutterLength)
+                    # list_over_actions.append(And(lower_bound,
+                    #                             upper_bound))  #
+                    list_over_actions.append(Or(list_of_equations))
                     self.no_of_subformula += 1
                 list_over_states.append(And(list_over_actions))
                 self.no_of_subformula += 1
@@ -196,10 +210,10 @@ class ModelChecker:
     def addToVariableList(self, name):
         if name[0] == 'h' and not name.startswith('holdsToInt'):  # holds_
             self.dictOfBools[name] = Bool(name)
-        elif name[0] in ['p', 'd', 'r', 'a'] or name.startswith('holdsToInt'):  # prob_, d_, rew_, a_s
+        elif name[0] in ['p', 'd', 'r', 'a', 't'] or name.startswith('holdsToInt'):  # prob_, d_, rew_, a_s
             self.dictOfReals[name] = Real(name)
-        elif name[0] in ['t']:  # t_
-            self.dictOfInts[name] = Int(name)
+        #elif name[0] in ['t']:  # t_
+        #    self.dictOfInts[name] = Int(name)
 
     def addToSubformulaList(self, formula_phi):  # add as you go any new subformula part as needed
         if formula_phi.data in ['exist_scheduler', 'forall_scheduler', 'exist_state', 'forall_state']:
@@ -300,7 +314,7 @@ class ModelChecker:
                     for action in state.actions:
                         name_tau = "t_" + str(i + 1) + "_" + str(state) + "_" + str(action.id)
                         index_of_pair = dict_pair_index[(state.id, action.id)]
-                        list_of_eqs.append(self.dictOfInts[name_tau] == IntVal(stutter_sched[index_of_pair]))
+                        list_of_eqs.append(self.dictOfReals[name_tau] == RealVal(stutter_sched[index_of_pair]))
                     list_over_actions.append(And(list_of_eqs))
                     self.no_of_subformula += 1
                 list_over_states.append(And(list_over_actions))
@@ -327,9 +341,9 @@ class ModelChecker:
                 # postcond = self.fetch_value(stutter_encoding_ipo, state_tuple)
                 postcond = stutter_encoding_ipo[i]
                 #if list_of_stutter_AV[quant - 1] == 'AT':
-                #    encoding = And([Implies(list_of_precond[i], postcond) for i in range(len(possible_stutterings))])
+                #    encoding = And([Implies(list_of_precond[j], postcond) for j in range(len(possible_stutterings))])
                 #elif list_of_stutter_AV[quant - 1] == 'VT':
-                encoding = Or([And(list_of_precond[i], postcond) for i in range(len(possible_stutterings))])
+                encoding = Or([And(list_of_precond[j], postcond) for j in range(len(possible_stutterings))])
                 stutter_encoding_i.append(encoding)
                 self.no_of_subformula += 1
                 # TODO as how many subformulas should this count?
@@ -363,6 +377,7 @@ class ModelChecker:
     def checkResult(self):
         starting_time = time.perf_counter()
         truth = self.solver.check()
+        #self.solver.proof()
         z3_time = time.perf_counter() - starting_time
         common.colourinfo("Finished checking!", False)
         list_of_actions = []
@@ -374,27 +389,27 @@ class ModelChecker:
             list_of_corr_stutter_qs = [[k for k, v in self.stutter_state_mapping.items() if v == q + 1] for q in range(self.no_of_state_quantifier)]
 
             for li in z3model:
-                if li.name()[0] == 'h' and z3model[li]: # and li.name().split("_")[-1] == '0'
+                if li.name()[0] == 'h' and z3model[li] and li.name().split("_")[-1] == '0':
                     state_tuple_str = li.name()[6:-2]
                     state_tuple_by_stutter = [state_tuple_str[i * 6 + (i + 1)] for i in range(self.no_of_stutter_quantifier)]
                     stutter_set = {state_tuple_str[i * 6 + (i + 1) + 3] for i in range(self.no_of_stutter_quantifier)}
                     states_by_state_qs = [[state_tuple_by_stutter[i - 1] for i in x] for x in list_of_corr_stutter_qs]
                     if stutter_set == {'0'} and {len(set(x)) for x in states_by_state_qs} == {1}:
                         state_list = [x[0] for x in states_by_state_qs]
-                        if li.name().split("_")[-1] == '0':
-                            set_of_holds.add(tuple(state_list))
-                        else:
-                            set_of_holds.add(tuple(state_list + ['index ' + str(li.name().split("_")[-1])]))
+                        # if li.name().split("_")[-1] == '0':
+                        set_of_holds.add(tuple(state_list))
+                        #else:
+                        #    set_of_holds.add(tuple(state_list + ['index ' + str(li.name().split("_")[-1])]))
                 elif li.name()[0] == 'a' and len(li.name()) == 5: # todo adjust depending on scheduler restrictions
                     list_of_actions.append((li.name(), z3model[li]))
                 elif li.name()[0] == 't':
                     stuttersched_assignments.append((li.name(), z3model[li]))
-                elif li.name()[0] == 'p':
-                    list_of_probs.append((li.name(), z3model[li]))
+                """elif li.name()[0] == 'p':
+                    list_of_probs.append((li.name(), z3model[li]))"""
         return truth, list_of_actions, set_of_holds, stuttersched_assignments, self.solver.statistics(), z3_time, list_of_probs
 
     def printResult(self, smt_end_time, scheduler_quantifier):
-        print(self.model.dict_of_acts_tran)
+        # print(self.model.dict_of_acts_tran)
         common.colourinfo("Checking...", False)
         smt_result, actions, holds, stuttersched_assignments, statistics, z3_time, list_of_probs = self.checkResult()
         if scheduler_quantifier == 'exists':
