@@ -383,7 +383,7 @@ class ModelChecker:
         list_of_actions = []
         set_of_holds = set()
         stuttersched_assignments = []
-        list_of_probs = []
+        # list_of_probs = []
         if truth == sat:
             z3model = self.solver.model()
             list_of_corr_stutter_qs = [[k for k, v in self.stutter_state_mapping.items() if v == q + 1] for q in range(self.no_of_state_quantifier)]
@@ -406,26 +406,37 @@ class ModelChecker:
                     stuttersched_assignments.append((li.name(), z3model[li]))
                 """elif li.name()[0] == 'p':
                     list_of_probs.append((li.name(), z3model[li]))"""
-        return truth, list_of_actions, set_of_holds, stuttersched_assignments, self.solver.statistics(), z3_time, list_of_probs
+        return truth, list_of_actions, set_of_holds, stuttersched_assignments, self.solver.statistics(), z3_time
 
     def printResult(self, smt_end_time, scheduler_quantifier):
+        # todo print nicer
         # print(self.model.dict_of_acts_tran)
         common.colourinfo("Checking...", False)
-        smt_result, actions, holds, stuttersched_assignments, statistics, z3_time, list_of_probs = self.checkResult()
+        smt_result, actions, holds, stuttersched_assignments, statistics, z3_time = self.checkResult()
+        actions.sort()
+        stuttersched_assignments.sort()
         if scheduler_quantifier == 'exists':
             if smt_result.r == 1:
                 # todo adjust to more fine-grained output depending on different quantifier combinations?
                 common.colouroutput("The property HOLDS!")
                 print("\nThe values of variables of the witness are:")
                 print("Choose scheduler probabilities as follows:")
-                print(actions)
-                # for i in range(0, len(actions)):
-                #    common.colouroutput("Choose action " + str(i) + " with probability " + str(actions[i]), False)
+                for act_prob in actions:
+                    common.colouroutput(
+                        "At state " + act_prob[0].split("_")[1] +
+                        " choose action " + act_prob[0].split("_")[2] +
+                        " with probability " + str(act_prob[1]),
+                        False)
+                print("\nChoose stutterschedulers as follows:")
+                for stutter_step in stuttersched_assignments:
+                    common.colouroutput(
+                        "For quantifier t" + stutter_step[0].split("_")[1] +
+                        " : For state " + stutter_step[0].split("_")[2] +
+                        " and action " + stutter_step[0].split("_")[3] +
+                        " choose stuttering duration " + str(stutter_step[1]),
+                        False)
                 print("\nThe following state variable assignments satisfy the property:")
                 print(holds)
-                print("\nChoose stutterschedulers as follows:")
-                print(stuttersched_assignments)  # todo print nicer
-                print(list_of_probs)
             elif smt_result.r == -1:
                 common.colourerror("The property DOES NOT hold!")
             else:
