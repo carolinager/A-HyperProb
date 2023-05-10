@@ -15,7 +15,7 @@ setup(
     install_requires=[
         'stormpy>=1.6.3',
         'lark-parser',
-        'z3-solver',
+        'z3-solver==4.11.2',
         'termcolor'
     ],
     python_requires='>=3.9',
