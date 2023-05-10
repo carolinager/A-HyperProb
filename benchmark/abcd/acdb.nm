@@ -21,7 +21,7 @@ endmodule
  
 init (lineT1=0)&(lineT2=0) endinit
 
-label "init" = (lineT1=0)&(lineT2=0);
+label "i" = (lineT1=0)&(lineT2=0);
 
 label "a" = (lineT1=1)&(lineT2=0);
 
