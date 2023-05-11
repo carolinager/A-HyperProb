@@ -379,6 +379,11 @@ class ModelChecker:
 
     def checkResult(self):
         common.colourinfo("Checking SMT-formula...", False)
+        common.colourinfo(
+            "Number of variables: " +
+            str(len(self.dictOfInts.keys()) + len(self.dictOfReals.keys()) + len(self.dictOfBools.keys())),
+            False)
+        common.colourinfo("Number of formula to check: " + str(self.no_of_subformula), False)
         starting_time = time.perf_counter()
         truth = self.solver.check()
         #self.solver.proof()
@@ -468,11 +473,6 @@ class ModelChecker:
                 common.colourerror("Solver returns unknown")"""
         common.colourinfo("\nTime to encode in seconds: " + str(round(smt_end_time, 2)), False)
         common.colourinfo("Time required by z3 in seconds: " + str(round(z3_time, 2)), False)
-        common.colourinfo(
-            "Number of variables: " +
-            str(len(self.dictOfInts.keys()) + len(self.dictOfReals.keys()) + len(self.dictOfBools.keys())),
-            False)
-        common.colourinfo("Number of formula checked: " + str(self.no_of_subformula), False)
         common.colourinfo("z3 statistics:", False)
         common.colourinfo(str(statistics), False)
 
