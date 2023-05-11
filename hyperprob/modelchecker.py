@@ -142,21 +142,21 @@ class ModelChecker:
                 scheduler_restrictions.append(Sum(sum_over_probs) == RealVal(1)) #.as_fraction()
 
         # todo: if we dont add an option for general memoryless prob. schedulers: replace a_s_x by a_A_x everywhere in semantic encoding instead of doing the following
-        for state in self.model.parsed_model.states:
+        """for state in self.model.parsed_model.states:
             name_s = "a_" + str(state.id) + "_"  # a_s_x is probability of action x in state s
             name_A = "a_" + str(set([a.id for a in state.actions])) + "_"
             if len(state.actions) == 1:
                 action = list(state.actions)[0]
                 name = name_s + str(action.id)
                 self.addToVariableList(name)
-                scheduler_restrictions.append(self.dictOfReals[name] == RealVal(1)) # .as_fraction()
+                scheduler_restrictions.append(self.dictOfReals[name] == RealVal(1))  # .as_fraction()
             else:
                 for act in state.actions:
                     name_s_a = name_s + str(act.id)
                     self.addToVariableList(name_s_a)
 
                     name_A_a = name_A + str(act.id)
-                    scheduler_restrictions.append(self.dictOfReals[name_s_a] == self.dictOfReals[name_A_a])
+                    scheduler_restrictions.append(self.dictOfReals[name_s_a] == self.dictOfReals[name_A_a])"""
 
         # general probabilistic memoryless stutter-scheduler:
         """        for state in self.model.parsed_model.states:
@@ -304,12 +304,13 @@ class ModelChecker:
                 i += 1
         possible_stutterings = list(itertools.product(list(range(self.stutterLength)), repeat=i))
 
+        print(len(possible_stutterings))
+
         common.colourinfo("Create list of preconditions...", False)
         # create list of preconditions for the encoding of stutter-quantifiers
         # TODO: naming of tau_i_s in algo line 5
         list_of_precondition = []
         for i in range(self.no_of_stutter_quantifier):  # todo vs len(list_of_stutter_AV)
-            print(len(possible_stutterings))
             list_over_states = []
             for stutter_sched in possible_stutterings:  # range over possible stuttering-schedulers
                 list_over_actions = []
