@@ -1,6 +1,6 @@
 mdp
 
-const int n1 = 2; //should be always greater than n2
+const int n1 = 3; //should be always greater than n2
 const int n2 = 0;
 
 module thread_secret
