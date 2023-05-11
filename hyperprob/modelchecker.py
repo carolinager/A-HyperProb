@@ -53,6 +53,8 @@ class ModelChecker:
         if self.initial_hyperproperty.parsed_property.data == 'exist_scheduler':
             self.addToSubformulaList(non_quantified_property)
             self.truth(combined_list_of_states_with_initial_stutter)
+
+            common.colourinfo("\nEncoding non-quantified formula...", False)
             semanticEncoder = SemanticsEncoder(self.model, self.solver,
                                                self.list_of_subformula,
                                                self.dictOfReals, self.dictOfBools, self.dictOfInts,
@@ -81,7 +83,6 @@ class ModelChecker:
             self.solver.add(list_of_prob_restrict)
             self.no_of_subformula += 1
 
-            common.colourinfo("Encoded non-quantified formula...", False)
             smt_end_time = time.perf_counter() - start_time
             self.printResult(smt_end_time, 'exists')
 
@@ -113,6 +114,7 @@ class ModelChecker:
 
     def encodeActions(self):
         # encode global, state-independent scheduler probabilities for the actions
+        common.colourinfo("Encoding scheduler...")
         set_of_actionsets = {frozenset(x) for x in self.model.getDictOfActions().values()}
         scheduler_restrictions = []
 
@@ -131,8 +133,8 @@ class ModelChecker:
                     # probabilistic scheduler
                     maxVal = self.maxSchedProb
                     minVal = 1 - maxVal
-                    scheduler_restrictions.append(self.dictOfReals[name] >= RealVal(minVal)) # .as_fraction()
-                    scheduler_restrictions.append(self.dictOfReals[name] <= RealVal(maxVal)) # .as_fraction()
+                    scheduler_restrictions.append(self.dictOfReals[name] > RealVal(minVal)) # .as_fraction()
+                    scheduler_restrictions.append(self.dictOfReals[name] < RealVal(maxVal)) # .as_fraction()
                     # deterministic scheduler (inefficient to encode it like this)
                     # scheduler_restrictions.append(Or(self.dictOfReals[name] == RealVal(0),
                     #                                  self.dictOfReals[name] == RealVal(1)))
@@ -178,9 +180,9 @@ class ModelChecker:
 
         self.solver.add(And(scheduler_restrictions))
         self.no_of_subformula += 1
-        common.colourinfo("Encoded actions in the MDP...")
 
     def encodeStuttering(self):
+        common.colourinfo("Encoding stutter-scheduler...", False)
         list_over_quantifiers = []
         for quantifier in range(0, self.no_of_stutter_quantifier):
             list_over_states = []
@@ -205,7 +207,6 @@ class ModelChecker:
             self.no_of_subformula += 1
         self.solver.add(And(list_over_quantifiers))
         self.no_of_subformula += 1
-        common.colourinfo("Encoded stutter actions in the MDP...", False)
 
     def addToVariableList(self, name):
         if name[0] == 'h' and not name.startswith('holdsToInt'):  # holds_
@@ -265,6 +266,7 @@ class ModelChecker:
         list_of_state_AV = []  # will have the OR, AND according to the quantifier in that index in the formula
         # list_of_stutter_AV = []  # placeholder to manage stutter quantifier encoding
         # TODO: work to remove assumption of stutter schedulers named in order
+        common.colourinfo("Prepare encoding quantifiers...", False)
         changed_hyperproperty = self.initial_hyperproperty.parsed_property
         while len(changed_hyperproperty.children) > 0:
             if changed_hyperproperty.data in ['exist_scheduler', 'forall_scheduler']:
@@ -302,10 +304,12 @@ class ModelChecker:
                 i += 1
         possible_stutterings = list(itertools.product(list(range(self.stutterLength)), repeat=i))
 
+        common.colourinfo("Create list of preconditions...", False)
         # create list of preconditions for the encoding of stutter-quantifiers
         # TODO: naming of tau_i_s in algo line 5
         list_of_precondition = []
         for i in range(self.no_of_stutter_quantifier):  # todo vs len(list_of_stutter_AV)
+            print(len(possible_stutterings))
             list_over_states = []
             for stutter_sched in possible_stutterings:  # range over possible stuttering-schedulers
                 list_over_actions = []
@@ -332,6 +336,7 @@ class ModelChecker:
             list_of_holds.append(self.dictOfBools[name])
 
         # encode stutter scheduler quantifiers (for each possible assignment of the state variables)
+        common.colourinfo("Encoding stutter quantifiers...", False)
         stutter_encoding_i = []
         stutter_encoding_ipo = list_of_holds
         for quant in range(self.no_of_stutter_quantifier, 0, -1):  # n, ..., 1
@@ -350,9 +355,9 @@ class ModelChecker:
             stutter_encoding_ipo.clear()
             stutter_encoding_ipo = copy.deepcopy(stutter_encoding_i)
             stutter_encoding_i.clear()
-        common.colourinfo("Encoded stutter quantifiers", False)
 
         # iteratively encode state quantifiers
+        common.colourinfo("Encoding state quantifiers...", False)
         state_encoding_i = []
         state_encoding_ipo = copy.deepcopy(stutter_encoding_ipo)
         for quant in range(self.no_of_state_quantifier, 0, -1):
@@ -372,9 +377,8 @@ class ModelChecker:
         # the formula can now be accessed via state_encoding_ipo[0]
         self.solver.add(state_encoding_ipo[0])
 
-        common.colourinfo("Encoded state quantifiers", False)
-
     def checkResult(self):
+        common.colourinfo("Checking SMT-formula...", False)
         starting_time = time.perf_counter()
         truth = self.solver.check()
         #self.solver.proof()
@@ -417,7 +421,6 @@ class ModelChecker:
     def printResult(self, smt_end_time, scheduler_quantifier):
         # todo print nicer
         # print(self.model.dict_of_acts_tran)
-        common.colourinfo("Checking...", False)
         smt_result, actions, holds, stuttersched_assignments, statistics, z3_time = self.checkResult()
         actions.sort()
         stuttersched_assignments.sort()
