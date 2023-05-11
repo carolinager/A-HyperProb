@@ -84,6 +84,11 @@ class Property:
         print(self.parsed_property.pretty())
 
 def checkStateQuantifiers(hyperproperty):
+    """
+    Traverses and checks state quantifiers
+    :param hyperproperty: AHyperPCTL formula
+    :return: stutter-quantified property, no. of state quantifiers, list of state variables in order of quantification
+    """
     formula_duplicate = hyperproperty
     no_of_quantifier = 0
     variable_indices = set() # list of state variable names/indices in order of quantification
@@ -102,6 +107,12 @@ def checkStateQuantifiers(hyperproperty):
 
 
 def checkStutterQuantifiers(hyperproperty, state_indices):
+    """
+    Traverses and checks stutter quantifiers
+    :param hyperproperty: quantified formula
+    :param state_indices: list of state variable indices
+    :return: stutter-quantified property, no. of state quantifiers, list of state variables in order of quantification
+    """
     formula_duplicate = hyperproperty
     no_of_quantifier = 0
     quant_stutter_state_quantifier = dict() # mapping quantified variables, dict of the form {stutter : state}, i.e. dict[stutter quantifier] = state_quantifier
@@ -111,9 +122,12 @@ def checkStutterQuantifiers(hyperproperty, state_indices):
             formula_duplicate = formula_duplicate.children[1]
         elif formula_duplicate.data in ['exist_stutter']: # , 'forall_stutter'
             no_of_quantifier += 1
-            quant_stutter_state_quantifier[int(formula_duplicate.children[0].value[1:])] = int(formula_duplicate.children[1].children[0].value[1:])
+            quant_stutter_state_quantifier[int(formula_duplicate.children[0].value[1:])] = int(
+                formula_duplicate.children[1].children[0].value[1:])
             variable_indices.append(int(formula_duplicate.children[0].value[1:]))
             formula_duplicate = formula_duplicate.children[2]
+        else:
+            break
     associated_state_indices = quant_stutter_state_quantifier.values()
 
     # check there exists a stutter-var for every state quantifier
@@ -138,40 +152,3 @@ def checkStutterQuantifiers(hyperproperty, state_indices):
         raise ValueError("The variables used in the formula do not match the quantified variables.")
 
     return formula_duplicate, quant_stutter_state_quantifier
-
-
-"""def negateForallProperty(parsed_property):
-    temp_traversed_property = parsed_property
-    index_for_child = -1
-    while len(temp_traversed_property.children) > 0:
-        if temp_traversed_property.data == 'forall_scheduler':
-            temp_traversed_property.data = 'exist_scheduler'
-            index_for_child = 1
-        elif temp_traversed_property.data == 'exist_state':
-            temp_traversed_property.data = 'forall_state'
-            index_for_child = 1
-        elif temp_traversed_property.data == 'forall_state':
-            temp_traversed_property.data = 'exist_state'
-            index_for_child = 1
-        elif temp_traversed_property.data == 'exist_stutter':
-            temp_traversed_property.data = 'forall_stutter'
-            index_for_child = 2
-        elif temp_traversed_property.data == 'forall_stutter':
-            temp_traversed_property.data = 'exist_stutter'
-            index_for_child = 2
-        elif temp_traversed_property.data == 'not':
-            pass
-        if temp_traversed_property.children[index_for_child].data in ['exist_state', 'forall_state', 'exist_stutter',
-                                                                      'forall_stutter']:
-            temp_traversed_property = temp_traversed_property.children[index_for_child]
-        elif temp_traversed_property.children[index_for_child].data in ['quantifiedformulastate']:
-            temp_traversed_property = temp_traversed_property.children[1].children[0]
-        elif temp_traversed_property.children[index_for_child].data in ['quantifiedformulastutter']:
-            temp_traversed_property = temp_traversed_property.children[index_for_child]
-            break
-    if temp_traversed_property.children[0].data == 'not':
-        temp_traversed_property.children[0] = temp_traversed_property.children[0].children[0]
-    else:
-        temp_traversed_property.children[0] = Tree('not', [temp_traversed_property.children[0]])
-
-    return temp_traversed_property.children[0]"""

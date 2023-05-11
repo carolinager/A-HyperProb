@@ -1,9 +1,7 @@
 import copy
 import itertools
 
-from lark import Tree
 from z3 import And, Bool, Real, Not, Or, Xor, RealVal, Implies, Product, Sum
-
 
 def extendWithoutDuplicates(list1, list2):
     result = []
@@ -17,14 +15,14 @@ def extendWithoutDuplicates(list1, list2):
 class SemanticsEncoder:
 
     def __init__(self, model,
-                 solver, list_of_subformula, dictOfReals, dictOfBools, dictOfInts, no_of_subformula,
-                 no_of_state_quantifier, no_of_stutter_quantifier, lengthOfStutter, stutter_state_mapping):
+                 solver, list_of_subformula, dictOfReals, dictOfBools,
+                 no_of_subformula, no_of_state_quantifier, no_of_stutter_quantifier, lengthOfStutter,
+                 stutter_state_mapping):
         self.model = model
         self.solver = solver
         self.list_of_subformula = list_of_subformula
         self.dictOfReals = dictOfReals
         self.dictOfBools = dictOfBools
-        self.dictOfInts = dictOfInts
         self.no_of_subformula = no_of_subformula
         self.no_of_state_quantifier = no_of_state_quantifier
         self.no_of_stutter_quantifier = no_of_stutter_quantifier
@@ -560,13 +558,10 @@ class SemanticsEncoder:
             self.encodeSemantics(hyperproperty.children[0])
 
     def addToVariableList(self, name):
-        # TODO reuse method in modelchecker
         if name[0] == 'h' and not name.startswith('holdsToInt'):  # and name not in self.dictOfBools.keys():
             self.dictOfBools[name] = Bool(name)
         elif (name[0] in ['p', 'd', 'r', 'a', 't'] or name.startswith('holdsToInt')):  # and name not in self.dictOfReals.keys():
             self.dictOfReals[name] = Real(name)
-        #elif name[0] in ['t']:
-        #    self.dictOfInts[name] = Int(name)
 
     def generateComposedStatesWithStutter(self, list_of_relevant_quantifier):
         """
@@ -760,16 +755,14 @@ class SemanticsEncoder:
             prob_phi += '_' + str(index_of_phi)
             self.addToVariableList(prob_phi)
 
-            new_prob_const_0 = self.dictOfReals[prob_phi] >= RealVal(0)
-            new_prob_const_1 = self.dictOfReals[prob_phi] <= RealVal(1)
+            #new_prob_const_0 = self.dictOfReals[prob_phi] >= RealVal(0)
+            #new_prob_const_1 = self.dictOfReals[prob_phi] <= RealVal(1)
 
             first_implies = And(Implies(self.dictOfBools[holds2],
                                         (self.dictOfReals[prob_phi] == RealVal(1))),
                                 Implies(And(Not(self.dictOfBools[holds1]),
                                             Not(self.dictOfBools[holds2])),
-                                        (self.dictOfReals[prob_phi] == RealVal(0))),
-                                new_prob_const_0,
-                                new_prob_const_1)
+                                        (self.dictOfReals[prob_phi] == RealVal(0))))
             self.solver.add(first_implies)
             self.no_of_subformula += 4
 
@@ -970,16 +963,14 @@ class SemanticsEncoder:
                 prob_phi += '_' + str(index_of_phi)
                 self.addToVariableList(prob_phi)
 
-                new_prob_const_0 = self.dictOfReals[prob_phi] >= RealVal(0)
-                new_prob_const_1 = self.dictOfReals[prob_phi] <= RealVal(1)
+                # new_prob_const_0 = self.dictOfReals[prob_phi] >= RealVal(0)
+                # new_prob_const_1 = self.dictOfReals[prob_phi] <= RealVal(1)
 
                 first_implies = And(Implies(self.dictOfBools[holds2],
                                             (self.dictOfReals[prob_phi] == RealVal(1))),
                                     Implies(And(Not(self.dictOfBools[holds1]),
                                                 Not(self.dictOfBools[holds2])),
-                                            (self.dictOfReals[prob_phi] == RealVal(0))),
-                                    new_prob_const_0,
-                                    new_prob_const_1)
+                                            (self.dictOfReals[prob_phi] == RealVal(0))))
                 self.no_of_subformula += 4
                 self.solver.add(first_implies)
 
@@ -1092,13 +1083,11 @@ class SemanticsEncoder:
                 prob_phi += '_' + str(index_of_phi)
                 self.addToVariableList(prob_phi)
 
-                new_prob_const_0 = self.dictOfReals[prob_phi] >= RealVal(0)
-                new_prob_const_1 = self.dictOfReals[prob_phi] <= RealVal(1)
+                # new_prob_const_0 = self.dictOfReals[prob_phi] >= RealVal(0)
+                # new_prob_const_1 = self.dictOfReals[prob_phi] <= RealVal(1)
 
                 first_implies = And(Implies(Not(self.dictOfBools[holds1]),
-                                            (self.dictOfReals[prob_phi] == RealVal(0))),
-                                    new_prob_const_0,
-                                    new_prob_const_1)
+                                            (self.dictOfReals[prob_phi] == RealVal(0))))
                 self.solver.add(first_implies)
                 self.no_of_subformula += 3
 
@@ -1343,12 +1332,11 @@ class SemanticsEncoder:
             prob_phi = 'prob'
             prob_phi += str_r_state + '_' + str(index_of_phi)
             self.addToVariableList(prob_phi)
-            new_prob_const_0 = self.dictOfReals[prob_phi] >= RealVal(0)
-            new_prob_const_1 = self.dictOfReals[prob_phi] <= RealVal(1)
+
+            #new_prob_const_0 = self.dictOfReals[prob_phi] >= RealVal(0)
+            #new_prob_const_1 = self.dictOfReals[prob_phi] <= RealVal(1)
             first_implies = And(Implies((Not(self.dictOfBools[holds1])),
-                                        (self.dictOfReals[prob_phi] == RealVal(0))),
-                                new_prob_const_0,
-                                new_prob_const_1)
+                                        (self.dictOfReals[prob_phi] == RealVal(0))))
             self.solver.add(first_implies)
             self.no_of_subformula += 1
 
