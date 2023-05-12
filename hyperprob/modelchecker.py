@@ -96,8 +96,8 @@ class ModelChecker:
                     # probabilistic scheduler
                     maxVal = self.maxSchedProb
                     minVal = 1 - maxVal
-                    scheduler_restrictions.append(self.dictOfReals[name] > RealVal(minVal)) # .as_fraction()
-                    scheduler_restrictions.append(self.dictOfReals[name] < RealVal(maxVal)) # .as_fraction()
+                    scheduler_restrictions.append(self.dictOfReals[name] >= RealVal(minVal)) # .as_fraction()
+                    scheduler_restrictions.append(self.dictOfReals[name] <= RealVal(maxVal)) # .as_fraction()
                     # deterministic scheduler (inefficient to encode it like this)
                     # scheduler_restrictions.append(Or(self.dictOfReals[name] == RealVal(0),
                     #                                  self.dictOfReals[name] == RealVal(1)))
@@ -330,7 +330,7 @@ class ModelChecker:
             - statistics: statistics of the z3 solver
             - smt_time: time the SMT solver took to check the formula
         """
-        common.colourinfo("Checking SMT-formula...", False)
+        common.colourinfo("\nChecking SMT-formula...", False)
         common.colourinfo(
             "Number of variables: " +
             str(len(self.dictOfReals.keys()) + len(self.dictOfBools.keys())),
@@ -358,7 +358,7 @@ class ModelChecker:
                     if stutter_set == {'0'} and {len(set(x)) for x in states_by_state_qs} == {1}:
                         state_list = [x[0] for x in states_by_state_qs]
                         set_of_holds.add(tuple(state_list))
-                elif li.name()[0] == 'a' and len(li.name()) == 5:
+                elif li.name()[0] == 'a':
                     scheduler_assignments.append((li.name(), z3model[li]))
                 elif li.name()[0] == 't':
                     stuttersched_assignments.append((li.name(), z3model[li]))
@@ -369,8 +369,8 @@ class ModelChecker:
         Print the result of the model checking
         :param encoding_time: time it took to create the SMT encoding
         """
-        smt_result, actions, holds, stuttersched_assignments, statistics, smt_time = self.checkResult()
-        actions.sort()
+        smt_result, scheduler_assignments, holds, stuttersched_assignments, statistics, smt_time = self.checkResult()
+        scheduler_assignments.sort()
         stuttersched_assignments.sort()
 
         if smt_result.r == 1:
@@ -378,7 +378,7 @@ class ModelChecker:
             common.colouroutput("The property HOLDS!")
             print("\nThe values of variables of the witness are:")
             print("Choose scheduler probabilities as follows:")
-            for act_prob in actions:
+            for act_prob in scheduler_assignments:
                 common.colouroutput(
                     "At a state with enabled actions " + act_prob[0].split("_")[1] +
                     " choose action " + act_prob[0].split("_")[2] +

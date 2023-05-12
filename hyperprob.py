@@ -26,7 +26,7 @@ def main():
             if input_args.maxSchedProb:
                 maxSchedProb = float(input_args.maxSchedProb)
             else:
-                maxSchedProb = 1
+                maxSchedProb = 0.99
             modelchecker = ModelChecker(model, hyperproperty, stutterLength, maxSchedProb)
             modelchecker.modelCheck()
         print("\n")

@@ -1166,7 +1166,7 @@ class SemanticsEncoder:
         return relevant_quantifier, rel_quant1, rel_quant2
 
     def encodeFutureSemantics(self, hyperproperty, relevant_quantifier=[]):
-        print("\n" + str(hyperproperty))
+        print("\nNow encoding: " + str(hyperproperty))
         phi1 = hyperproperty.children[0].children[0]
         index_of_phi1 = self.list_of_subformula.index(phi1)
         index_of_phi = self.list_of_subformula.index(hyperproperty)
@@ -1206,10 +1206,6 @@ class SemanticsEncoder:
                     list(itertools.product(list(range(self.stutterLength)), repeat=len(dicts_act[-1]))))
             combined_acts = list(itertools.product(*dicts_act))
             combined_stutters = list(itertools.product(*stutters_for_actions))
-            """for h_tuple in combined_stutters:
-                for l in range(len(relevant_quantifier)):
-                    if max(list(h_tuple[l])) < r_state[relevant_quantifier[l] - 1][1]:
-                        combined_stutters.remove(h_tuple)"""
 
             # encode probability calculation
             for h_tuple in combined_stutters:
