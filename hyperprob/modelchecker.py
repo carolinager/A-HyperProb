@@ -68,8 +68,9 @@ class ModelChecker:
         self.no_of_subformula += 1
 
         encoding_time = time.perf_counter() - start_time
+        common.colourinfo("\nTime to encode in seconds: " + str(round(encoding_time, 2)), False)
 
-        self.printResult(encoding_time)
+        self.printResult()
 
     def encodeScheduler(self):
         """
@@ -132,7 +133,7 @@ class ModelChecker:
         Introduce variables encoding the deterministic bounded-memory stutter-schedulers.
         Variable t_i_s_x represents the stutter duration for stutter quantifier i and state s and action x.
         """
-        common.colourinfo("Encoding stutter-scheduler...", False)
+        common.colourinfo("Encoding stutter-schedulers...", False)
         list_over_quantifiers = []
         for quantifier in range(0, self.no_of_stutter_quantifier):
             list_over_states = []
@@ -201,7 +202,7 @@ class ModelChecker:
                 i += 1
         possible_stutterings = list(itertools.product(list(range(self.stutterLength)), repeat=i))
 
-        print("Number of possible stutter-schedulers: " + str(len(possible_stutterings)))
+        print("Number of possible stutter-schedulers (per quantifier): " + str(len(possible_stutterings)))
 
         common.colourinfo("Create list of preconditions...", False)
         # create list of preconditions for the encoding of stutter-quantifiers
@@ -341,6 +342,9 @@ class ModelChecker:
         #self.solver.proof()
         smt_time = time.perf_counter() - starting_time
         common.colourinfo("Finished checking!", False)
+        common.colourinfo("Time required by z3 in seconds: " + str(round(smt_time, 2)), False)
+
+        # collect information for printing
         scheduler_assignments = []
         set_of_holds = set()
         stuttersched_assignments = []
@@ -362,14 +366,14 @@ class ModelChecker:
                     scheduler_assignments.append((li.name(), z3model[li]))
                 elif li.name()[0] == 't':
                     stuttersched_assignments.append((li.name(), z3model[li]))
-        return truth, scheduler_assignments, set_of_holds, stuttersched_assignments, self.solver.statistics(), smt_time
+        return truth, scheduler_assignments, set_of_holds, stuttersched_assignments, self.solver.statistics()
 
-    def printResult(self, encoding_time):
+    def printResult(self):
         """
         Print the result of the model checking
         :param encoding_time: time it took to create the SMT encoding
         """
-        smt_result, scheduler_assignments, holds, stuttersched_assignments, statistics, smt_time = self.checkResult()
+        smt_result, scheduler_assignments, holds, stuttersched_assignments, statistics = self.checkResult()
         scheduler_assignments.sort()
         stuttersched_assignments.sort()
 
@@ -398,7 +402,5 @@ class ModelChecker:
             common.colourerror("The property DOES NOT hold!")
         else:
             common.colourerror("Solver returns unknown")
-        common.colourinfo("\nTime to encode in seconds: " + str(round(encoding_time, 2)), False)
-        common.colourinfo("Time required by z3 in seconds: " + str(round(smt_time, 2)), False)
-        common.colourinfo("z3 statistics:", False)
+        common.colourinfo("\nz3 statistics:", False)
         common.colourinfo(str(statistics), False)
