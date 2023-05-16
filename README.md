@@ -14,3 +14,22 @@ A-HyperProb depends on [stormpy](https://github.com/moves-rwth/stormpy) which ha
 
 To install A-HyperProb run:
 `pip install .` from the `HyperProb` folder.
+
+
+## Run via docker
+
+Get docker (https://www.docker.com/get-started/) and clone A-HyperProb locally:
+```
+git clone https://github.com/carolinager/A-HyperProb
+cd A-HyperProb
+```
+or simply download the Dockerfile provided in the repository.
+
+Build an image:
+```
+docker build -t ahyperprob .
+```
+Run the image as a container:
+```
+docker run -it ahyperprob
+```
