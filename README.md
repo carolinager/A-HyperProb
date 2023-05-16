@@ -16,7 +16,7 @@ To install A-HyperProb run:
 `pip install .` from the `HyperProb` folder.
 
 
-## Run via docker
+## Run via docker (Recommended)
 
 Get docker (https://www.docker.com/get-started/) and clone A-HyperProb locally:
 ```
@@ -33,3 +33,14 @@ Run the image as a container:
 ```
 docker run -it ahyperprob
 ```
+
+## Example applications with expected runtimes
+TODO
+
+Expected runtime: TODO
+
+## Host platform on which docker was tested:
+OS: Ubuntu 22.04.2
+RAM: 32GB
+Number of cores: 8
+CPU frequency: 3.60GHz
