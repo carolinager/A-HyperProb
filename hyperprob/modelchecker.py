@@ -3,7 +3,7 @@ import time
 import itertools
 
 from lark import Tree
-from z3 import SolverFor, Bool, Real, Or, sat, And, RealVal, Sum
+from z3 import SolverFor, Bool, Real, Or, sat, And, Implies, RealVal, Sum
 
 import hyperprob.semanticencoder
 from hyperprob.utility import common
@@ -58,13 +58,14 @@ class ModelChecker:
                                            )
         semanticEncoder.encodeSemantics(non_quantified_property)
 
-        # ensure that all variables encoding probabilities range in [0, 1]
-        list_of_prob_restrict = []
+        # ensure that all variables encoding probabilities range in [0, 1], and that pseudo-Bool vars only take on 0 or 1
+        restrictions = []
         for name in self.dictOfReals.keys():
-            if name[0] == 'p':
-                list_of_prob_restrict.append(self.dictOfReals[name] >= RealVal(0))
-                list_of_prob_restrict.append(self.dictOfReals[name] <= RealVal(1))
-        self.solver.add(list_of_prob_restrict)
+            if name[0] == 'p' or name[0] == 'T':
+                restrictions.append(And(self.dictOfReals[name] >= RealVal(0), self.dictOfReals[name] <= RealVal(1)))
+            if name[0] == 'g':
+                restrictions.append(Or(self.dictOfReals[name] == RealVal(0), self.dictOfReals[name] == RealVal(1)))
+        self.solver.add(restrictions)
         self.no_of_subformula += 1
 
         encoding_time = time.perf_counter() - start_time
@@ -130,9 +131,14 @@ class ModelChecker:
 
     def encodeStuttering(self):
         """
-        Introduce variables encoding the deterministic bounded-memory stutter-schedulers.
+        Introduce variables encoding:
+        - the deterministic bounded-memory stutter-schedulers,
+        - whether potential successor state is indeed a successor state under the encoded stutter-scheduler
+        - the probability of moving to a successor under the encoded stutter-scheduler
         Variable t_i_s_x represents the stutter duration for stutter quantifier i and state s and action x.
         """
+
+        # encode the stutter-schedulers
         common.colourinfo("Encoding stutter-schedulers...", False)
         list_over_quantifiers = []
         for quantifier in range(0, self.no_of_stutter_quantifier):
@@ -154,21 +160,156 @@ class ModelChecker:
         self.solver.add(And(list_over_quantifiers))
         self.no_of_subformula += 1
 
+        # encode whether potential successor state is indeed a successor state under the encoded stutter-scheduler
+        # states_with_stutter = list(itertools.product(self.model.getListOfStates(), list(range(self.stutterLength))))
+        # state_stutter_tuples = list(itertools.product(states_with_stutter, repeat=self.no_of_stutter_quantifier))
+        #
+        # list_over_states = []
+        # for state_stutter_tuple in state_stutter_tuples:
+        #     enabled_actions = [self.model.dict_of_acts[elt[0]] for elt in state_stutter_tuple]
+        #     list_over_actions = []
+        #     for action_tuple in itertools.product(*enabled_actions):
+        #         list_of_successor_tuple_lists = []
+        #         list_over_succs = []
+        #
+        #         for i in range(self.no_of_stutter_quantifier):
+        #             succ = self.model.dict_of_acts_tran[str(state_stutter_tuple[i][0]) + " " + str(action_tuple[i])]
+        #             successor_tuple_list = []
+        #             for s in succ:
+        #                 space = s.find(' ')
+        #                 succ_state = int(s[0:space])
+        #                 successor_tuple_list.append((succ_state, 0))
+        #
+        #             if state_stutter_tuple[i][1] < self.no_of_stutter_quantifier - 1:
+        #                 successor_tuple_list.append((state_stutter_tuple[i][0], state_stutter_tuple[i][1] + 1))
+        #             list_of_successor_tuple_lists.append(successor_tuple_list)
+        #
+        #         combined_succ_tuples = list(itertools.product(*list_of_successor_tuple_lists))
+        #         for succ_tuple in combined_succ_tuples:
+        #             go = "go_" + str(state_stutter_tuple) + "_" + str(action_tuple) + "_" + str(succ_tuple)
+        #             self.addToVariableList(go)
+        #             pseudo_bool = Or(self.dictOfReals[go] == 0, self.dictOfReals[go] == 1)
+        #             list_of_disjunctions = []
+        #             for i in range(self.no_of_stutter_quantifier):
+        #                 stu_name = "t_" + str(i+1) + "_" + str(state_stutter_tuple[i][0]) + "_" + str(action_tuple[i])
+        #                 stutter = And(state_stutter_tuple[i][1] < self.dictOfReals[stu_name],
+        #                               succ_tuple[i][1] == state_stutter_tuple[i][1])
+        #                 cont = And(state_stutter_tuple[i][1] >= self.dictOfReals[stu_name], succ_tuple[i][1] == 0)
+        #                 list_of_disjunctions.append(Or(stutter, cont))
+        #             list_over_succs.append(And(Implies(pseudo_bool, And(list_of_disjunctions)),
+        #                                        Implies(And(list_of_disjunctions), pseudo_bool)))
+        #             self.no_of_subformula += 2
+        #         list_over_actions.append(And(list_over_succs))
+        #         self.no_of_subformula += 1
+        #     list_over_states.append(And(list_over_actions))
+        #     self.no_of_subformula += 1
+        # self.solver.add(And(list_over_states))
+        # self.no_of_subformula += 1
+
+        # encode probability of transitioning to successor under encoded stutter-scheduler and
+        # whether potential successor state is indeed a successor state under the encoded stutter-scheduler
+        common.colourinfo("Encoding transitions and probabilities under stutter-schedulers...", False)
+        states_with_stutter = list(itertools.product(self.model.getListOfStates(), list(range(self.stutterLength))))
+        list_over_quants = []
+        list_over_quants_go = []
+        for i in range(1, self.no_of_stutter_quantifier + 1):
+            list_over_states = []
+            list_over_states_go = []
+            for state_stutter in states_with_stutter:
+                list_over_actions = []
+                list_over_actions_go = []
+                for action in self.model.dict_of_acts[state_stutter[0]]:
+                    list_over_succs = []
+                    list_over_succs_go = []
+                    succ = self.model.dict_of_acts_tran[str(state_stutter[0]) + " " + str(action)]
+                    mdp_successor_list = []
+                    dict_of_probs = {}
+                    for s in succ:
+                        space = s.find(' ')
+                        succ_state = int(s[0:space])
+                        mdp_successor_list.append((succ_state, 0))
+                        dict_of_probs[(succ_state, 0)] = RealVal(s[space + 1:])
+
+                    for succ in mdp_successor_list:
+                        # Tr
+                        # todo the following only works for my special case with stutterlength 2!!
+                        tr = "Tr_" + str(i) + "_" + str(state_stutter) + "_" + str(action) + "_" + str(succ)
+                        self.addToVariableList(tr)
+                        stu_name = "t_" + str(i) + "_" + str(state_stutter[0]) + "_" + str(action)
+                        stutter = Implies(state_stutter[1] >= self.dictOfReals[stu_name],
+                                          #    And(succ[1] == 0),
+                                          self.dictOfReals[tr] == dict_of_probs[succ])
+                        cont = Implies(state_stutter[1] < self.dictOfReals[stu_name],
+                                       #    And(succ[1] == state_stutter[1] + 1),
+                                       self.dictOfReals[tr] == RealVal(0))
+                        list_over_succs.append(And(stutter, cont))
+                        self.no_of_subformula += 1
+
+                        # go
+                        go = "go_" + str(i) + "_" + str(state_stutter) + "_" + str(action) + "_" + str(succ)
+                        self.addToVariableList(go)
+                        pseudo_bool = Or(self.dictOfReals[go] == 0, self.dictOfReals[go] == 1)
+                        stutter_go = And(state_stutter[1] < self.dictOfReals[stu_name],
+                                      succ[1] == state_stutter[1] + 1)
+                        cont_go = And(state_stutter[1] >= self.dictOfReals[stu_name],
+                                   succ[1] == 0)
+
+                        list_over_succs_go.append(And(pseudo_bool,
+                                                      And(Implies(self.dictOfReals[go] == 1, Or(stutter_go, cont_go)),
+                                                          Implies(Or(cont_go, stutter_go), self.dictOfReals[go] == 1))))
+                        self.no_of_subformula += 2
+
+                    if state_stutter[1] < self.stutterLength - 1:
+                        succ = (state_stutter[0], state_stutter[1] + 1)
+                        tr = "Tr_" + str(i) + "_" + str(state_stutter) + "_" + str(action) + "_" + str(succ)
+                        self.addToVariableList(tr)
+                        stu_name = "t_" + str(i) + "_" + str(state_stutter[0]) + "_" + str(action)
+                        stutter = Implies(state_stutter[1] >= self.dictOfReals[stu_name],
+                                           #And(   succ[1] == 0),
+                                          self.dictOfReals[tr] == RealVal(0))
+                        cont = Implies(state_stutter[1] < self.dictOfReals[stu_name],
+                                       #And(    succ[1] == state_stutter[1] + 1),
+                                       self.dictOfReals[tr] == RealVal(1))
+                        list_over_succs.append(And(stutter, cont))
+                        self.no_of_subformula += 1
+
+                        go = "go_" + str(i) + "_" + str(state_stutter) + "_" + str(action) + "_" + str(succ)
+                        self.addToVariableList(go)
+                        pseudo_bool = Or(self.dictOfReals[go] == 0, self.dictOfReals[go] == 1)
+                        stutter_go = And(state_stutter[1] < self.dictOfReals[stu_name],
+                                         succ[1] == state_stutter[1] + 1)
+                        cont_go = And(state_stutter[1] >= self.dictOfReals[stu_name],
+                                      succ[1] == 0)
+
+                        list_over_succs_go.append(And(pseudo_bool,
+                                                      And(Implies(self.dictOfReals[go] == 1, Or(stutter_go, cont_go)),
+                                                          Implies(Or(cont_go, stutter_go), self.dictOfReals[go] == 1))))
+                        self.no_of_subformula += 2
+
+                    print(list_over_succs)
+                    print(list_over_succs_go)
+                    list_over_actions.append(And(list_over_succs))
+                    self.no_of_subformula += 1
+                    list_over_actions_go.append(And(list_over_succs_go))
+                    self.no_of_subformula += 1
+                list_over_states.append(And(list_over_states))
+                self.no_of_subformula += 1
+                list_over_states_go.append(And(list_over_states_go))
+                self.no_of_subformula += 1
+            list_over_quants.append(And(list_over_states))
+            self.no_of_subformula += 1
+            list_over_quants_go.append(And(list_over_states_go))
+            self.no_of_subformula += 1
+        self.solver.add(And(list_over_quants))
+        self.no_of_subformula += 1
+        self.solver.add(And(list_over_quants_go))
+        self.no_of_subformula += 1
+
     def truth(self):
         """
-        Encode the state and stutter quantifiers by translating "forall" to conjunction and "exists" to disjunction
+        Encode the state quantifiers by translating "forall" to conjunction and "exists" to disjunction
         """
-        # create list of state tuples of the induced DTMC
-        list_of_states_with_initial_stutter = list(itertools.product(self.model.getListOfStates(), [0]))
-        list_of_state_tuples = list(
-            itertools.product(list_of_states_with_initial_stutter, repeat=self.no_of_state_quantifier))
-        if self.no_of_stutter_quantifier != self.no_of_state_quantifier:
-            combined_list_of_states_with_initial_stutter = [
-                tuple([x[self.stutter_state_mapping[q] - 1] for q in range(1, self.no_of_stutter_quantifier + 1)])
-                for x in list_of_state_tuples]
-        else:
-            combined_list_of_states_with_initial_stutter = list_of_state_tuples
-
+        # cycle through property and collect forall, exist
         list_of_state_AV = []  # will have the OR, AND according to the quantifier in that index in the formula
         # TODO: work to remove assumption of stutter schedulers named in order
         common.colourinfo("Prepare encoding quantifiers...", False)
@@ -193,35 +334,16 @@ class ModelChecker:
 
         index_of_phi = self.list_of_subformula.index(changed_hyperproperty)
 
-        # create all possible stutter-schedulers: assign one stutter-length to each state-action-pair
-        dict_pair_index = dict()  # dictionary mapping state-action-pairs to their index in an ordered enumeration of all state-action pairs
-        i = 0
-        for state in self.model.parsed_model.states:
-            for action in state.actions:
-                dict_pair_index[(state.id, action.id)] = i
-                i += 1
-        possible_stutterings = list(itertools.product(list(range(self.stutterLength)), repeat=i))
-
-        print("Number of possible stutter-schedulers (per quantifier): " + str(len(possible_stutterings)))
-
-        common.colourinfo("Create list of preconditions...", False)
-        # create list of preconditions for the encoding of stutter-quantifiers
-        list_of_precondition = []
-        for i in range(self.no_of_stutter_quantifier):
-            list_over_states = []
-            for stutter_sched in possible_stutterings: # range over possible stuttering-schedulers
-                list_over_actions = []
-                for state in self.model.parsed_model.states:
-                    list_of_eqs = []
-                    for action in state.actions:
-                        name_tau = "t_" + str(i + 1) + "_" + str(state) + "_" + str(action.id)
-                        index_of_pair = dict_pair_index[(state.id, action.id)]
-                        list_of_eqs.append(self.dictOfReals[name_tau] == RealVal(stutter_sched[index_of_pair]))
-                    list_over_actions.append(And(list_of_eqs))
-                    self.no_of_subformula += 1
-                list_over_states.append(And(list_over_actions))
-                self.no_of_subformula += 1
-            list_of_precondition.append(list_over_states)
+        # create list of state tuples of the induced DTMC
+        list_of_states_with_initial_stutter = list(itertools.product(self.model.getListOfStates(), [0]))
+        list_of_state_tuples = list(
+            itertools.product(list_of_states_with_initial_stutter, repeat=self.no_of_state_quantifier))
+        if self.no_of_stutter_quantifier != self.no_of_state_quantifier:
+            combined_list_of_states_with_initial_stutter = [
+                tuple([x[self.stutter_state_mapping[q] - 1] for q in range(1, self.no_of_stutter_quantifier + 1)])
+                for x in list_of_state_tuples]
+        else:
+            combined_list_of_states_with_initial_stutter = list_of_state_tuples
 
         # create list of holds_(s1,0)_..._0 for all state combinations
         list_of_holds = []
@@ -233,27 +355,12 @@ class ModelChecker:
             self.addToVariableList(name)
             list_of_holds.append(self.dictOfBools[name])
 
-        # encode stutter scheduler quantifiers (for each possible assignment of the state variables)
-        common.colourinfo("Encoding stutter quantifiers...", False)
-        stutter_encoding_i = []
-        stutter_encoding_ipo = list_of_holds
-        for quant in range(self.no_of_stutter_quantifier, 0, -1):  # n, ..., 1
-            for i in range(len(combined_list_of_states_with_initial_stutter)):
-                list_of_precond = list_of_precondition[quant - 1]  # indexed starting from 0
-                postcond = stutter_encoding_ipo[i]
-                encoding = Or([And(list_of_precond[j], postcond) for j in range(len(possible_stutterings))])
-                stutter_encoding_i.append(encoding)
-                self.no_of_subformula += 1
-            stutter_encoding_ipo.clear()
-            stutter_encoding_ipo = copy.deepcopy(stutter_encoding_i)
-            stutter_encoding_i.clear()
-
         # iteratively encode state quantifiers
         common.colourinfo("Encoding state quantifiers...", False)
         state_encoding_i = []
-        state_encoding_ipo = copy.deepcopy(stutter_encoding_ipo)
+        state_encoding_ipo = list_of_holds
         for quant in range(self.no_of_state_quantifier, 0, -1):
-            n = len(self.model.getListOfStates()) # todo this wont work anymore?
+            n = len(self.model.getListOfStates())
             len_i = int(len(state_encoding_ipo) / n)
             if list_of_state_AV[quant - 1] == 'A':
                 state_encoding_i = [And(state_encoding_ipo[(j * n):((j + 1) * n)]) for j in range(len_i)]
@@ -268,7 +375,7 @@ class ModelChecker:
     def addToVariableList(self, name):
         if name[0] == 'h' and not name.startswith('holdsToInt'):  # holds_
             self.dictOfBools[name] = Bool(name)
-        elif name[0] in ['p', 'd', 'a', 't'] or name.startswith('holdsToInt'):  # prob_, d_, a_, t_
+        elif name[0] in ['p', 'd', 'a', 't', 'g', 'T'] or name.startswith('holdsToInt'):  # prob_, d_, a_, t_, go_, Tr_
             self.dictOfReals[name] = Real(name)
 
     def addToSubformulaList(self, formula_phi):
@@ -336,7 +443,7 @@ class ModelChecker:
             "Number of variables: " +
             str(len(self.dictOfReals.keys()) + len(self.dictOfBools.keys())),
             False)
-        common.colourinfo("Number of formula to check: " + str(self.no_of_subformula), False)
+        common.colourinfo("Number of formulas to check: " + str(self.no_of_subformula), False)
         starting_time = time.perf_counter()
         truth = self.solver.check()
         #self.solver.proof()
@@ -353,6 +460,14 @@ class ModelChecker:
             list_of_corr_stutter_qs = [[k for k, v in self.stutter_state_mapping.items() if v == q + 1] for q in range(self.no_of_state_quantifier)]
 
             for li in z3model:
+                if li.name().split("_")[0] == 'holds' and li.name().split("_")[1] =='(0, 0)' and li.name().split("_")[-1] == '0':
+                    print(li.name() +" " + str(z3model[li]))
+                if li.name()[0] in ['prob_(0, 0)_(0, 0)_5', 'prob_(0, 1)_(0, 0)_5', 'prob_(1, 0)_(0, 0)_5', 'prob_(1, 1)_(0, 0)_5', 'prob_(3, 0)_(0, 0)_5']:
+                    print(li.name() + " " + str(z3model[li]))
+                if li.name()[0] in ['prob_(0, 0)_(1, 0)_8', 'prob_(0, 0)_(1, 1)_8', 'prob_(0, 0)_(0, 0)_8', 'prob_(0, 0)_(3, 0)_8', 'prob_(0, 0)_(3, 1)_8']:
+                    print(li.name() + " " + str(z3model[li]))
+                if li.name()[0] == 'T':
+                    print(li.name() + " " + str(z3model[li]))
                 if li.name()[0] == 'h' and z3model[li] and li.name().split("_")[-1] == '0':
                     state_tuples_list = li.name().split("_")[1:-1]
                     states_list = [elt.split(", ")[0][1:] for elt in state_tuples_list]
