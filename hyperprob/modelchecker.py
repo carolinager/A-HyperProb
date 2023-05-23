@@ -46,6 +46,7 @@ class ModelChecker:
         # encode the meaning of the quantifiers
         self.truth()
 
+        print(self.model.dict_of_acts_tran)
         # encode the non-quantified property
         common.colourinfo("\nEncoding non-quantified formula...", False)
         semanticEncoder = SemanticsEncoder(self.model, self.solver,
