@@ -35,7 +35,7 @@ docker run -it ahyperprob
 ```
 
 ## Example applications with expected runtimes
-####SSPOD:
+####Classic Example (CE):
 Expected Runtime:
 
 ```
@@ -45,7 +45,9 @@ Expected Runtime:
 -stutterLength 2
 ```
 
-####TL:
+Alternatively replace 'th01' with 'th02', 'th03', 'th05'
+
+####Timing Leak (TL):
 Expected Runtime:
 
 ```
