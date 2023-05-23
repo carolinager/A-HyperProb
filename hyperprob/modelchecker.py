@@ -61,10 +61,10 @@ class ModelChecker:
         # ensure that all variables encoding probabilities range in [0, 1], and that pseudo-Bool vars only take on 0 or 1
         restrictions = []
         for name in self.dictOfReals.keys():
-            if name[0] == 'p' or name[0] == 'T':
+            if name[0] == 'p':
                 restrictions.append(And(self.dictOfReals[name] >= RealVal(0), self.dictOfReals[name] <= RealVal(1)))
-            if name[0] == 'g':
-                restrictions.append(Or(self.dictOfReals[name] == RealVal(0), self.dictOfReals[name] == RealVal(1)))
+            #if name[0] == 'T': #todo handle T differently # or name[0] == 'T'
+            #    restrictions.append(Or(self.dictOfReals[name] == RealVal(0), self.dictOfReals[name] == RealVal(1)))
         self.solver.add(restrictions)
         self.no_of_subformula += 1
 
@@ -230,19 +230,21 @@ class ModelChecker:
                         mdp_successor_list.append((succ_state, 0))
                         dict_of_probs[(succ_state, 0)] = RealVal(s[space + 1:])
 
+                    # mdp successors
                     for succ in mdp_successor_list:
                         # Tr
-                        # todo the following only works for my special case with stutterlength 2!!
+                        stu_name = "t_" + str(i) + "_" + str(state_stutter[0]) + "_" + str(action)
                         tr = "Tr_" + str(i) + "_" + str(state_stutter) + "_" + str(action) + "_" + str(succ)
                         self.addToVariableList(tr)
-                        stu_name = "t_" + str(i) + "_" + str(state_stutter[0]) + "_" + str(action)
+
+                        restriction = Or(self.dictOfReals[tr] == RealVal(0), self.dictOfReals[tr] == dict_of_probs[succ])
                         stutter = Implies(state_stutter[1] >= self.dictOfReals[stu_name],
                                           #    And(succ[1] == 0),
                                           self.dictOfReals[tr] == dict_of_probs[succ])
                         cont = Implies(state_stutter[1] < self.dictOfReals[stu_name],
                                        #    And(succ[1] == state_stutter[1] + 1),
                                        self.dictOfReals[tr] == RealVal(0))
-                        list_over_succs.append(And(stutter, cont))
+                        list_over_succs.append(And(restriction, stutter, cont))
                         self.no_of_subformula += 1
 
                         # go
@@ -259,20 +261,26 @@ class ModelChecker:
                                                           Implies(Or(cont_go, stutter_go), self.dictOfReals[go] == 1))))
                         self.no_of_subformula += 2
 
+                    # stutter successor
                     if state_stutter[1] < self.stutterLength - 1:
+                        stu_name = "t_" + str(i) + "_" + str(state_stutter[0]) + "_" + str(action)
+
+                        # Tr
                         succ = (state_stutter[0], state_stutter[1] + 1)
                         tr = "Tr_" + str(i) + "_" + str(state_stutter) + "_" + str(action) + "_" + str(succ)
                         self.addToVariableList(tr)
-                        stu_name = "t_" + str(i) + "_" + str(state_stutter[0]) + "_" + str(action)
+
+                        restriction = Or(self.dictOfReals[tr] == RealVal(0), self.dictOfReals[tr] == RealVal(1))
                         stutter = Implies(state_stutter[1] >= self.dictOfReals[stu_name],
                                            #And(   succ[1] == 0),
                                           self.dictOfReals[tr] == RealVal(0))
                         cont = Implies(state_stutter[1] < self.dictOfReals[stu_name],
                                        #And(    succ[1] == state_stutter[1] + 1),
                                        self.dictOfReals[tr] == RealVal(1))
-                        list_over_succs.append(And(stutter, cont))
+                        list_over_succs.append(And(restriction, stutter, cont))
                         self.no_of_subformula += 1
 
+                        # go
                         go = "go_" + str(i) + "_" + str(state_stutter) + "_" + str(action) + "_" + str(succ)
                         self.addToVariableList(go)
                         pseudo_bool = Or(self.dictOfReals[go] == 0, self.dictOfReals[go] == 1)
@@ -286,15 +294,13 @@ class ModelChecker:
                                                           Implies(Or(cont_go, stutter_go), self.dictOfReals[go] == 1))))
                         self.no_of_subformula += 2
 
-                    print(list_over_succs)
-                    print(list_over_succs_go)
                     list_over_actions.append(And(list_over_succs))
                     self.no_of_subformula += 1
                     list_over_actions_go.append(And(list_over_succs_go))
                     self.no_of_subformula += 1
-                list_over_states.append(And(list_over_states))
+                list_over_states.append(And(list_over_actions))
                 self.no_of_subformula += 1
-                list_over_states_go.append(And(list_over_states_go))
+                list_over_states_go.append(And(list_over_actions_go))
                 self.no_of_subformula += 1
             list_over_quants.append(And(list_over_states))
             self.no_of_subformula += 1
@@ -455,19 +461,22 @@ class ModelChecker:
         scheduler_assignments = []
         set_of_holds = set()
         stuttersched_assignments = []
+        other = []
         if truth == sat:
             z3model = self.solver.model()
             list_of_corr_stutter_qs = [[k for k, v in self.stutter_state_mapping.items() if v == q + 1] for q in range(self.no_of_state_quantifier)]
 
             for li in z3model:
-                if li.name().split("_")[0] == 'holds' and li.name().split("_")[1] =='(0, 0)' and li.name().split("_")[-1] == '0':
-                    print(li.name() +" " + str(z3model[li]))
-                if li.name()[0] in ['prob_(0, 0)_(0, 0)_5', 'prob_(0, 1)_(0, 0)_5', 'prob_(1, 0)_(0, 0)_5', 'prob_(1, 1)_(0, 0)_5', 'prob_(3, 0)_(0, 0)_5']:
-                    print(li.name() + " " + str(z3model[li]))
-                if li.name()[0] in ['prob_(0, 0)_(1, 0)_8', 'prob_(0, 0)_(1, 1)_8', 'prob_(0, 0)_(0, 0)_8', 'prob_(0, 0)_(3, 0)_8', 'prob_(0, 0)_(3, 1)_8']:
-                    print(li.name() + " " + str(z3model[li]))
-                if li.name()[0] == 'T':
-                    print(li.name() + " " + str(z3model[li]))
+                # if li.name().split("_")[0] == 'holds' and li.name().split("_")[1] =='(0, 0)' and li.name().split("_")[-1] == '0':
+                #     other.append(li.name() +" " + str(z3model[li]))
+                # if li.name()[0] in ['prob_(0, 0)_(0, 0)_5', 'prob_(0, 1)_(0, 0)_5', 'prob_(1, 0)_(0, 0)_5', 'prob_(1, 1)_(0, 0)_5', 'prob_(3, 0)_(0, 0)_5']:
+                #     other.append(li.name() + " " + str(z3model[li]))
+                # if li.name()[0] in ['prob_(0, 0)_(1, 0)_8', 'prob_(0, 0)_(1, 1)_8', 'prob_(0, 0)_(0, 0)_8', 'prob_(0, 0)_(3, 0)_8', 'prob_(0, 0)_(3, 1)_8']:
+                #     other.append(li.name() + " " + str(z3model[li]))
+                # if li.name()[0] == 'T':
+                #     other.append(li.name() + " " + str(z3model[li]))
+                # if li.name()[0] == 'g':
+                #     other.append(li.name() + " " + str(z3model[li]))
                 if li.name()[0] == 'h' and z3model[li] and li.name().split("_")[-1] == '0':
                     state_tuples_list = li.name().split("_")[1:-1]
                     states_list = [elt.split(", ")[0][1:] for elt in state_tuples_list]
@@ -481,6 +490,10 @@ class ModelChecker:
                     scheduler_assignments.append((li.name(), z3model[li]))
                 elif li.name()[0] == 't':
                     stuttersched_assignments.append((li.name(), z3model[li]))
+
+            other.sort()
+            for x in other:
+                print(x)
         return truth, scheduler_assignments, set_of_holds, stuttersched_assignments, self.solver.statistics()
 
     def printResult(self):
