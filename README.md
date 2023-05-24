@@ -34,7 +34,7 @@ docker build -t ahyperprob .
 docker run -it ahyperprob
 ```
 
-### Example Applications With Expected Runtimes
+## Example Applications With Expected Runtimes
 ####Classic Example (CE):
 Expected Runtime for ```th01```: 16sec <br>
 Expected Runtime for ```th02```-```th05```: Solving did not finish in >1h
