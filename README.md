@@ -1,6 +1,7 @@
 # A-HyperProb
 
 This package model checks asynchronous probabilistic hyperproperties written in A-HyperPCTL on MDPs.
+The implementation is in python and uses the SMT solver Z3.
 
 ## Run via Docker (Recommended)
 
@@ -55,6 +56,28 @@ Expected Runtime: Memory exceeded in 18 minutes
 ```
 
 
+## Explanation of A-HyperProb Commands
+
+A-HyperProb commands are structured as follows:
+
+```-modelPath <path_to_model> -hyperString <AHyperPCTL_formula> -stutterLength <stutter_memory_size>```
+
+- hyperString syntax:
+    - ES sh : existential scheduler quantification. Currently only a single scheduler variable is supported.
+    - E s1 / A s1 : existential / universal state quantification. We assume that the state variables are named s1, ..., sn for some n, but they do not have to appear in this order
+    - ET t1 (s1) : existential stutter quantification. We assume that the stutter-scheduler variables are named t1, ..., tn and that they appear in this order
+    - non-quantified property: Consider the grammar in ```hyperprob/propertyparser.py``` for a detailed syntax. Special attention should be paid to correct placement of brackets.
+
+- stutterLength: memory size for the stutter-schedulers. Value 0 corresponds to the trivial stutter-scheduler which does not stutter at all.
+
+
+Optional parameters:
+
+- checkProperty: set flag to check if the specified A-HyperPCTL formula is syntactically correct
+- checkModel: set flag to check if the model file can be parsed
+- maxSchedProb: specify an upper bound for the scheduler probabilities. This default value is 0.99
+
+
 ## Host Platform On Which The Docker Image Was Tested:
 OS: Ubuntu 22.04.2<br>
 RAM: 32GB<br>
@@ -75,3 +98,21 @@ A-HyperProb depends on [stormpy](https://github.com/moves-rwth/stormpy) which ha
 
 To install A-HyperProb run:
 `pip install .` from the `HyperProb` folder.
+
+
+## People
+
+### Authors:
+  - [Lina Gerlach](https://ths.rwth-aachen.de/people/lina-gerlach/), RWTH Aachen.
+  - [Oyendrila Dobe](https://oyendrila-dobe.github.io/), Michigan State University.  
+
+
+### Other Contributors:
+  - [Erika Abraham](https://ths.rwth-aachen.de/people/erika-abraham/), RWTH Aachen.
+  - [Ezio Bartocci](https://informatics.tuwien.ac.at/people/ezio-bartocci), TU-Vienna.
+  - [Borzoo Bonakdarpour](http://www.cse.msu.edu/~borzoo/), Michigan State University.   
+
+## Acknowledgements
+
+ - Oyendrila Dobe is supported by the United States National Science Foundation
+ - Lina Gerlach is supported by DFG RTG 2236/2 UnRAVeL
