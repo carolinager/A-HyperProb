@@ -1,7 +1,7 @@
 # A-HyperProb
 
 This package model checks asynchronous probabilistic hyperproperties written in A-HyperPCTL on MDPs.
-The implementation is in python and uses the SMT solver Z3.
+The implementation is in python and uses the SMT solver Z3. It is based on the model-checking implementation for HyperPCTL: https://github.com/TART-MSU/HyperProb
 
 ## Run via Docker (Recommended)
 
@@ -36,7 +36,8 @@ docker run -it ahyperprob
 ```
 
 ## Example Applications With Expected Runtimes
-####Classic Example (CE):
+### Classic Example (CE):
+
 Expected Runtime for ```th01```: 16sec <br>
 Expected Runtime for ```th02```-```th05```: Solving did not finish in >1h
 
@@ -44,16 +45,17 @@ Expected Runtime for ```th02```-```th05```: Solving did not finish in >1h
 
 Replace ```th01``` with ```th02```-```th05``` for different initial values of h.
 
-####Timing Leak (TL):
+### Timing Leak (TL):
+
 Expected Runtime: Solving did not finish in >1h
 
 ```-modelPath ./benchmark/TL/tl.nm -hyperString "ES sh . A s1 . A s2 . ET t1 (s1). ET t2 (s2) . ((i(t1) & i(t2)) -> (P(F j0(t1)) = P(F j0(t2))))" -stutterLength 2 ```
 
-####ACDB:
+### ACDB:
+
 Expected Runtime: Memory exceeded in 18 minutes
 
-``` -modelPath ./benchmark/ACDB/acdb.nm -hyperString "ES sh . A s1 . A s2 . ET t1 (s1). ET t2 (s2) .  ((i(t1) & i(t2)) -> (P(G (P(X a(t1)) = P(X a(t2)))) = 1))" -stutterLength 2
-```
+``` -modelPath ./benchmark/ACDB/acdb.nm -hyperString "ES sh . A s1 . A s2 . ET t1 (s1). ET t2 (s2) .  ((i(t1) & i(t2)) -> (P(G (P(X a(t1)) = P(X a(t2)))) = 1))" -stutterLength 2```
 
 
 ## Explanation of A-HyperProb Commands
@@ -68,7 +70,7 @@ A-HyperProb commands are structured as follows:
     - ET t1 (s1) : existential stutter quantification. We assume that the stutter-scheduler variables are named t1, ..., tn and that they appear in this order
     - non-quantified property: Consider the grammar in ```hyperprob/propertyparser.py``` for a detailed syntax. Special attention should be paid to correct placement of brackets.
 
-- stutterLength: memory size for the stutter-schedulers. Value 0 corresponds to the trivial stutter-scheduler which does not stutter at all.
+- stutterLength: memory size for the stutter-schedulers. Value 1 corresponds to the trivial stutter-scheduler which does not stutter at all.
 
 
 Optional parameters:
@@ -76,13 +78,6 @@ Optional parameters:
 - checkProperty: set flag to check if the specified A-HyperPCTL formula is syntactically correct
 - checkModel: set flag to check if the model file can be parsed
 - maxSchedProb: specify an upper bound for the scheduler probabilities. This default value is 0.99
-
-
-## Host Platform On Which The Docker Image Was Tested:
-OS: Ubuntu 22.04.2<br>
-RAM: 32GB<br>
-Number of cores: 8<br>
-CPU frequency: 3.60GHz
 
 
 ## Installation (Not Recommended)
